@@ -42,6 +42,15 @@ def HomePageView backgroundColor="red" {
         heading: "Welcome to the home page!";
     }
 }
+
+// Since we declared the previous views, they are reusable
+
+def AboutPageView backgroundColor="green" {
+    TopBarView;
+    ContentView {
+        heading: "Now you are on the About page.";
+    }
+}
 ```
 
 ###### Output of a rendered HomePageView:
