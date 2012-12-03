@@ -1,0 +1,1 @@
+Hector.echo.call($contextName, $value)

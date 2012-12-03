@@ -1,4 +1,4 @@
-hector
+Hector.js
 ======
 
-A view markup language and implementation
+In progress.

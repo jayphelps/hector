@@ -1,0 +1,7 @@
+<% if (isConditional) { %>
+(typeof $value !== "undefined")
+    ? $evaluation
+    : undefined;
+<% } else { %>
+$evaluation;
+<% } %>
