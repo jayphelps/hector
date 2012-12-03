@@ -5,7 +5,7 @@ In progress.
 
 
 ### Example
-```javascript   
+```python   
 // This is a valid comment
 /* So is this */
 
