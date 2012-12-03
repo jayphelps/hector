@@ -1,6 +1,5 @@
-Hector.js
+Hector.js [![Build Status](https://travis-ci.org/jayphelps/hector.png)](https://travis-ci.org/jayphelps/hector)
 ======
-
 In progress.
 
 
