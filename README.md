@@ -30,9 +30,9 @@ def ContentView style.width="960px" {
     }
     <#if $items?>
     ul {
-        <#foreach $items>
+        <#each $items>
         li { $name; }
-        </foreach>
+        </each>
     }
     </if>
 }
