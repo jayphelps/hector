@@ -84,7 +84,6 @@ Hector.Builders = (function (window, document) {
                 keys.push(key);
                 str = str.replace(new RegExp("\\$"+key, 'gmi'), data[key]);
             }
-            
         }
 
         str = "var p=[],print=function(){p.push.apply(p,arguments);};"
@@ -101,10 +100,10 @@ Hector.Builders = (function (window, document) {
 
         keys.push(str);
 
-        console.log(str);
+        Hector.log(str);
         var fn = Function.apply(null, keys);
 
-        console.log(fn.toString());
+        Hector.log(fn.toString());
         return fn.apply(null, values);
     };
 

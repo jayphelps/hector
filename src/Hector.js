@@ -43,11 +43,14 @@ var Hector = (function (window, document) {
         throw e;
     }
 
-    function log(desc, arg) {
+    function log(arg, desc) {
         if (options.log && window.console) {
+            desc = desc || "Log";
             console.log("Hector" + desc + ":", arg);
         }
     }
+
+    Hector.log = log;
 
     function camelCaseToHyphens(str) {
         return str.replace(/([a-z][A-Z])/g, function (match) {
@@ -302,11 +305,11 @@ var Hector = (function (window, document) {
 
         var tree = Hector.Parser.parse(source);
 
-        log("ParseTree", tree);
+        log(tree, "ParseTree");
 
         var output = Hector.walkTree(tree.nodes, "this");
 
-        log("TemplateOutput", output);
+        log(output, "TemplateOutput");
     
         return output;
     };
