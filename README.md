@@ -4,7 +4,7 @@ In progress.
 
 
 ### Example
-```python   
+```   
 // This is a valid comment
 /* So is this */
 
@@ -28,17 +28,20 @@ def ContentView style.width="960px" {
     ButtonView {
         label: "I am a button!";
     }
+    <#if $items?>
     ul {
-        li { "first";  }
-        li { "second"; }
-        li { "third";  }
+        <#foreach $items>
+        li { $name; }
+        </foreach>
     }
+    </if>
 }
 
 def HomePageView backgroundColor="red" {
     TopBarView;
     ContentView {
         heading: "Welcome to the home page!";
+        items: ["first", "second", "third"];
     }
 }
 
