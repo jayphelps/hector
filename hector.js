@@ -2889,6 +2889,8 @@ Hector.Parser = (function(){
   
   return result;
 })();
+
+
 Hector.Builders = (function (window, document) {
 
     var Builders = {};
@@ -3116,7 +3118,9 @@ Hector.Builders = (function (window, document) {
 
     return Builders;
     
-})(window, document);Hector.Builders.templates["Echo"] = "Hector.echo.call($contextName, $value)";
+})(window, document);
+
+Hector.Builders.templates["Echo"] = "Hector.echo.call($contextName, $value)";
 Hector.Builders.templates["Variable"] = "<% if (isConditional) { %> (typeof $value !== 'undefined')     ? $evaluation     : undefined; <% } else { %> $evaluation; <% } %>";
 Hector.Builders.templates["View"] = "<% if (isConditional) { %> if (typeof $constructorName !== 'undefined') {     var $varName = new $constructorName();     $inner     $contextName.$appendChild($varName); } <% } else { %> var $varName = (typeof $constructorName !== 'undefined')     ? new $constructorName     : new HectorOptions.baseConstructor('$constructorName'); $inner $contextName.$appendChild($varName); <% } %>";
 Hector.Builders.templates["ViewDeclaration"] = "";

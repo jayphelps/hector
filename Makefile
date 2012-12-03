@@ -15,7 +15,7 @@ SRC_DIR          = src
 SPEC_DIR         = spec
 NODE_MODULES_DIR = node_modules
 
-TEMPLATE_DIR     = src/targets/$(TARGET)/templates
+TEMPLATE_DIR = src/targets/$(TARGET)/templates
 
 PEGJS_DIR     = tools/pegjs
 PEGJS_BIN_DIR = $(PEGJS_DIR)/bin
@@ -57,12 +57,16 @@ all: pegjs parser build
 
 # Build the compiler
 build:
-	@for templateName in $(TEMPLATES); do                                                \
-	  printf "$(PROJECT_NAME).Builders.templates[\"$$templateName\"] = \"" >> $(BUFFER); \
-	  tr '\n' ' ' < $(TEMPLATE_DIR)/$$templateName | tr '"' "'"            >> $(BUFFER); \
-	  printf "\";\n" 													   >> $(BUFFER); \
+	@for srcFile in $(SRC_FILES); do \
+	    cat $$srcFile >> $(BUFFER);   \
+	    printf "\n\n" >> $(BUFFER);  \
 	done
-	@cat $(SRC_FILES) $(BUFFER) > $(OUTPUT_FILE)
+	@for templateName in $(TEMPLATES); do                                                  \
+	    printf "$(PROJECT_NAME).Builders.templates[\"$$templateName\"] = \"" >> $(BUFFER); \
+	    tr '\n' ' ' < $(TEMPLATE_DIR)/$$templateName | tr '"' "'"            >> $(BUFFER); \
+	    printf "\";\n"                                                       >> $(BUFFER); \
+	done
+	@cat $(BUFFER) > $(OUTPUT_FILE)
 	@rm -f $(BUFFER)
 	@type -P $(UGLIFYJS) &>/dev/null && ($(UGLIFYJS) --unsafe --lift-vars -o $(OUTPUT_FILE_MIN) $(OUTPUT_FILE)) || echo "warning: uglifyjs not found, $(OUTPUT_FILE_MIN) not built."
 	@echo "$(PROJECT_NAME).js built successfully."

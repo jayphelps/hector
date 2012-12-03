@@ -314,4 +314,3 @@ var Hector = (function (window, document) {
     return Hector;
 
 })(window, document);
-
