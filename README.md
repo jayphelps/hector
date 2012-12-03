@@ -29,6 +29,11 @@ def ContentView style.width="960px" {
     ButtonView {
         label: "I am a button!";
     }
+    ul {
+        li { "first";  }
+        li { "second"; }
+        li { "third";  }
+    }
 }
 
 def HomePageView backgroundColor="red" {
@@ -49,6 +54,11 @@ def HomePageView backgroundColor="red" {
     <div style="width: 960px;">
         <h1>Welcome to the home page!</h1>
         <span class="button-view">I am a button!</span>
+        <ul>
+            <li>first</li>
+            <li>second</li>
+            <li>third</li>
+        </ul>
     </div>
 </div>
 ```
