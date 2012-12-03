@@ -23,7 +23,7 @@ rootElements
 rootElement
     = variableStatement
     / viewDeclaration
-    / templateInstance
+    / viewInstance
     / helper
     / value:stringLiteral {
         return {
@@ -45,7 +45,7 @@ elements
 
 element
     = variableStatement
-    / templateInstance
+    / viewInstance
     / helper
     / value:stringLiteral {
         return {
@@ -98,12 +98,12 @@ helper
     }
 
 viewDeclaration
-    = "def" __ inst:templateInstance {
+    = "def" __ inst:viewInstance {
         inst.type = "ViewDeclaration";
         return inst;
     }
 
-templateInstance
+viewInstance
     = id:(variable / identifier) __ attributes:attributes? __ ";" {
         return {
             type: "View",
@@ -124,7 +124,7 @@ templateInstance
         };
     }
 
-templateInstanceNoEOL
+viewInstanceNoEOL
     = id:identifier __ attributes:attributes? {
         return {
             type: "View",
@@ -150,7 +150,7 @@ arguments
     }
 
 argument
-    = id:identifier __ ":" __ value:(stringLiteral / variable / templateInstanceNoEOL) __ ";" {
+    = id:identifier __ ":" __ value:(stringLiteral / variable / viewInstanceNoEOL) __ ";" {
         return {
             type: "Argument",
             key: id,
