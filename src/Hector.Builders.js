@@ -89,7 +89,7 @@ Hector.Builders = (function (window, document) {
 
         str = "var p=[],print=function(){p.push.apply(p,arguments);};"
             + "p.push(\""
-            + str.replace(/[\r\t\n]/g, " ")
+            + str.replace(/[\r\t\n]/g, "\\n")
                  .split("<%").join("\t")
                  .replace(/((^|%>)[^\t]*)'/g, "$1\r")
                  .replace(/\t=(.*?)%>/g, "\",$1,\"")

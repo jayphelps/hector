@@ -63,7 +63,7 @@ build:
 	done
 	@for templateName in $(TEMPLATES); do                                                  \
 	    printf "$(PROJECT_NAME).Builders.templates[\"$$templateName\"] = \"" >> $(BUFFER); \
-	    tr '\n' ' ' < $(TEMPLATE_DIR)/$$templateName | tr '"' "'"            >> $(BUFFER); \
+		perl -p -e 's/\n/\\n/g' $(TEMPLATE_DIR)/$$templateName | tr '"' "'"            >> $(BUFFER); \
 	    printf "\";\n"                                                       >> $(BUFFER); \
 	done
 	@cat $(BUFFER) > $(OUTPUT_FILE)

@@ -2982,7 +2982,7 @@ Hector.Builders = (function (window, document) {
 
         str = "var p=[],print=function(){p.push.apply(p,arguments);};"
             + "p.push(\""
-            + str.replace(/[\r\t\n]/g, " ")
+            + str.replace(/[\r\t\n]/g, "\\n")
                  .split("<%").join("\t")
                  .replace(/((^|%>)[^\t]*)'/g, "$1\r")
                  .replace(/\t=(.*?)%>/g, "\",$1,\"")
@@ -3121,6 +3121,6 @@ Hector.Builders = (function (window, document) {
 })(window, document);
 
 Hector.Builders.templates["Echo"] = "Hector.echo.call($contextName, $value)";
-Hector.Builders.templates["Variable"] = "<% if (isConditional) { %> (typeof $value !== 'undefined')     ? $evaluation     : undefined; <% } else { %> $evaluation; <% } %>";
-Hector.Builders.templates["View"] = "<% if (isConditional) { %> if (typeof $constructorName !== 'undefined') {     var $varName = new $constructorName();     $inner     $contextName.$appendChild($varName); } <% } else { %> var $varName = (typeof $constructorName !== 'undefined')     ? new $constructorName     : new HectorOptions.baseConstructor('$constructorName'); $inner $contextName.$appendChild($varName); <% } %>";
+Hector.Builders.templates["Variable"] = "<% if (isConditional) { %>\n(typeof $value !== 'undefined')\n    ? $evaluation\n    : undefined;\n<% } else { %>\n$evaluation;\n<% } %>";
+Hector.Builders.templates["View"] = "<% if (isConditional) { %>\nif (typeof $constructorName !== 'undefined') {\n    var $varName = new $constructorName();\n    $inner\n    $contextName.$appendChild($varName);\n}\n<% } else { %>\nvar $varName = (typeof $constructorName !== 'undefined')\n    ? new $constructorName\n    : new HectorOptions.baseConstructor('$constructorName');\n$inner\n$contextName.$appendChild($varName);\n<% } %>";
 Hector.Builders.templates["ViewDeclaration"] = "";
