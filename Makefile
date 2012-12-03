@@ -57,10 +57,10 @@ all: pegjs parser build
 
 # Build the compiler
 build:
-	@for templateName in $(TEMPLATES); do                                               \
+	@for templateName in $(TEMPLATES); do                                                \
 	  printf "$(PROJECT_NAME).Builders.templates[\"$$templateName\"] = \"" >> $(BUFFER); \
-	  tr '\n' ' ' < $(TEMPLATE_DIR)/$$templateName | tr '"' "'"               >> $(BUFFER);   \
-	  printf "\";\n" 													>> $(BUFFER); \
+	  tr '\n' ' ' < $(TEMPLATE_DIR)/$$templateName | tr '"' "'"            >> $(BUFFER); \
+	  printf "\";\n" 													   >> $(BUFFER); \
 	done
 	@cat $(SRC_FILES) $(BUFFER) > $(OUTPUT_FILE)
 	@rm -f $(BUFFER)
