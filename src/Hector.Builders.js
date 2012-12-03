@@ -17,8 +17,13 @@ Hector.Builders = (function (window, document) {
 
     var variableCounter = {
         count: -1,
+        excludes: [],
         reset: function () {
             variableCounter.count = -1;
+            variableCounter.excludes.length = 0;
+        },
+        exclude: function () {
+            this.excludes.push.apply(this.excludes, arguments);
         }
     };
 
@@ -41,14 +46,20 @@ Hector.Builders = (function (window, document) {
 
         i = Math.floor(i);
 
-        variableName += variableNames[i];
+        variableName += variableNames[i] + "_";
 
         return variableName;
     }
 
     function createUniqueIdentifier() {
         variableCounter.count++;
-        return createUniqueName(variableCounter.count);
+        var varName = createUniqueName(variableCounter.count);
+
+        if (variableCounter.excludes.indexOf(varName) !== -1) {
+            return createUniqueIdentifier();
+        } else {
+            return varName;
+        }
     }
 
     function expandAttributes(attributes, contextName) {
@@ -164,10 +175,11 @@ Hector.Builders = (function (window, document) {
         // cause it changes the AST too much
         var out = "";
         var inner = "";
-        var varName = createUniqueIdentifier();
         var constructorName = element.constructorName;
+        variableCounter.exclude(constructorName);
+        var varName = createUniqueIdentifier();
 
-        out += "'" + element.constructorName + "';\n";
+        out += "'" + constructorName + "';\n";
 
         if (element.children.length) {
             inner += walkTree(element.children, varName);

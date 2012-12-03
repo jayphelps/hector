@@ -15,7 +15,7 @@ var Hector = (function (window, document) {
             appendChild: "appendChild"
         },
         debug: true,
-        buffer: false,
+        buffer: true,
         baseConstructor: ElementContainer
     };
 

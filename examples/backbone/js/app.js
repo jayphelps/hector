@@ -5,7 +5,7 @@ $(function () {
         template: Hector.compile($("#templates").text()),
 
         initialize: function() {
-            this.model.set({ name: "Example Name" });
+            this.model.set({ name: "Example Name", iconClassName:"hello", label:"click me" });
         },
 
         render: function() {
