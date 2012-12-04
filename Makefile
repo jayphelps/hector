@@ -43,7 +43,7 @@ BUFFER = hector-buffer.js
 
 PEGJS    = $(PEGJS_BIN_DIR)/pegjs
 NODE     = node
-UGLIFYJS = $(NODE_MODULES_DIR)/uglify-js/bin/uglifyjs
+UGLIFYJS = uglifyjs
 INDENT   = sed 's/^/    /'
 
 # Flags ==================================================================

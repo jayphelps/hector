@@ -600,7 +600,7 @@ Hector.Parser = (function(){
         if (r0 === null) {
           r0 = parse_viewDeclaration();
           if (r0 === null) {
-            r0 = parse_templateInstance();
+            r0 = parse_viewInstance();
             if (r0 === null) {
               r0 = parse_helper();
               if (r0 === null) {
@@ -697,7 +697,7 @@ Hector.Parser = (function(){
         
         r0 = parse_variableStatement();
         if (r0 === null) {
-          r0 = parse_templateInstance();
+          r0 = parse_viewInstance();
           if (r0 === null) {
             r0 = parse_helper();
             if (r0 === null) {
@@ -987,7 +987,7 @@ Hector.Parser = (function(){
         if (r3 !== null) {
           r4 = parse___();
           if (r4 !== null) {
-            r5 = parse_templateInstance();
+            r5 = parse_viewInstance();
             if (r5 !== null) {
               r0 = [r3, r4, r5];
             } else {
@@ -1015,7 +1015,7 @@ Hector.Parser = (function(){
         return r0;
       }
       
-      function parse_templateInstance() {
+      function parse_viewInstance() {
         var r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12;
         
         r1 = pos;
@@ -1201,7 +1201,7 @@ Hector.Parser = (function(){
         return r0;
       }
       
-      function parse_templateInstanceNoEOL() {
+      function parse_viewInstanceNoEOL() {
         var r0, r1, r2, r3, r4, r5;
         
         r1 = pos;
@@ -1345,7 +1345,7 @@ Hector.Parser = (function(){
                 if (r7 === null) {
                   r7 = parse_variable();
                   if (r7 === null) {
-                    r7 = parse_templateInstanceNoEOL();
+                    r7 = parse_viewInstanceNoEOL();
                   }
                 }
                 if (r7 !== null) {
