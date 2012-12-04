@@ -3,10 +3,6 @@
  * (c) 2012 Jay Phelps
  * MIT Licensed
  * https://github.com/jayphelps/hector
- * 
- * Simple JavaScript Inheritance
- * John Resig http://ejohn.org/
- * MIT Licensed
  */
 var Hector = (function (window, document) {
     "use strict";
