@@ -20,7 +20,7 @@ TEMPLATE_DIR = src/targets/$(TARGET)/templates
 PEGJS_DIR     = tools/pegjs
 PEGJS_BIN_DIR = $(PEGJS_DIR)/bin
 PEGJS_LIB_DIR = $(PEGJS_DIR)/lib
-
+V8_DIR        = tools/v8/
 
 # Files ========================================================================
 
@@ -44,6 +44,7 @@ BUFFER = hector-buffer.js
 # Executables ==================================================================
 
 PEGJS    = $(PEGJS_BIN_DIR)/pegjs
+D8       = $(V8_DIR)/out/native/d8
 NODE     = node
 UGLIFYJS = uglifyjs
 INDENT   = sed 's/^/    /'
@@ -88,3 +89,9 @@ pegjs:
 	@cd $(PEGJS_DIR); \
 	make parser
 	@echo "PEG.js built successfully."
+
+# Build Google V8
+v8:
+	@cd $(V8_DIR); \
+	make dependencies; \
+	make native.check
