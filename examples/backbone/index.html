@@ -8,11 +8,6 @@
     <script src="js/app.js"></script>
 </head>
 <body>
-
-<script>
-var App = {};
-</script>
-
 <script id="templates" type="text/x-hector-template">
 
 def ExampleView tagName="span" className="example-view" {
@@ -30,21 +25,5 @@ def ExampleView tagName="span" className="example-view" {
 }
 
 </script>
-
-    <script type="text/template" id="item-template">
-        <div class="view">
-            <input class="toggle" type="checkbox" <%= done ? 'checked="checked"' : '' %> />
-            <label><%- title %></label>
-            <a class="destroy"></a>
-        </div>
-        <input class="edit" type="text" value="<%- title %>" />
-    </script>
-
-     <script type="text/template" id="stats-template">
-        <% if (done) { %>
-        <a id="clear-completed">Clear <%= done %> completed <%= done == 1 ? 'item' : 'items' %></a>
-        <% } %>
-        <div class="todo-count"><b><%= remaining %></b> <%= remaining == 1 ? 'item' : 'items' %> left</div>
-    </script>
 </body>
 </html>
