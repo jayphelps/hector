@@ -7,7 +7,7 @@
 
 PROJECT_NAME = Hector
 PARSER_NAME  = $(PROJECT_NAME).Parser
-TARGET 	     = javascript
+TARGET 	     = javascript/hector
 
 # Directories ==================================================================
 
@@ -65,7 +65,7 @@ build:
 	done
 	@for templateName in $(TEMPLATES); do                                                  \
 	    printf "$(PROJECT_NAME).Builders.templates[\"$$templateName\"] = '"  >> $(BUFFER); \
-		perl -p -e 's/\n/\\n/g' $(TEMPLATE_DIR)/$$templateName | tr "'" "\"" >> $(BUFFER); \
+		perl tools/scripts/openfile.pl $(TEMPLATE_DIR)/$$templateName | perl -p -e 's/\n/\\n/g' | tr "'" "\"" >> $(BUFFER); \
 	    printf "';\n"                                                        >> $(BUFFER); \
 	done
 	@cat $(BUFFER) > $(OUTPUT_FILE)
