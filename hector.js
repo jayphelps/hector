@@ -2735,7 +2735,7 @@ Hector.Builders = (function (window, document) {
                  .split("\t").join("\");")
                  .split("%>").join("p.push(\"")
                  .split("\r").join("\\'")
-                 .replace(/\$/gm, "")
+                 //.replace(/\$/gm, "")
             + "\");return p.join(\"\");";
 
         keys.push(str);
@@ -2841,7 +2841,6 @@ Hector.Builders = (function (window, document) {
 
         out += renderTemplate("ViewStatement", {
             contextName: contextName,
-            appendChild: viewMethods.appendChild,
             varName: varName,
             constructorName: constructorName,
             isConditional: isConditional,
@@ -2882,9 +2881,9 @@ Hector.Builders = (function (window, document) {
     
 })(window, document);
 
-Hector.Builders.templates["Echo"] = '';
-Hector.Builders.templates["Variable"] = '<% if (isConditional) { %>\n(typeof $value !== "undefined")\n    ? $evaluation\n    : undefined;\n<% } else { %>\n$evaluation;\n';
-Hector.Builders.templates["AttributeStatement"] = '';
-Hector.Builders.templates["AttributeDeclaration"] = '';
-Hector.Builders.templates["ViewStatement"] = '<% if (isConditional) { %>\nif (typeof $constructorName !== "undefined") {\n    var $varName = new $constructorName();\n    $inner\n    $contextName.append($varName);\n}\n<% } else { %>\nvar $varName = (typeof $constructorName !== "undefined")\n    ? new $constructorName\n    : new HectorOptions.elementConstructor("$constructorName");\n$inner\n$contextName.append($varName);\n';
-Hector.Builders.templates["ViewDeclaration"] = '<%=Hector.options.namespace%>.$constructorName = Backbone.View.extend({\n    <% print(attributes.join(Hector.comma)); %>\n';
+Hector.Builders.templates["Echo"] = 'Hector.echo.call($contextName, $value)';
+Hector.Builders.templates["Variable"] = '<% if (isConditional) { %>\n(typeof $value !== "undefined")\n    ? $evaluation\n    : undefined;\n<% } else { %>\n$evaluation;\n<% } %>';
+Hector.Builders.templates["AttributeStatement"] = '$contextName.$el.attr("$key", $value);';
+Hector.Builders.templates["AttributeDeclaration"] = '$key: $value';
+Hector.Builders.templates["ViewStatement"] = '<% if (isConditional) { %>\nif (typeof $constructorName !== "undefined") {\n    var $varName = new $constructorName();\n    $inner\n    $contextName.append($varName);\n}\n<% } else { %>\nvar $varName = (typeof $constructorName !== "undefined")\n    ? new $constructorName\n    : new HectorOptions.elementConstructor("$constructorName");\n$inner\n$contextName.$el.append($varName);\n<% } %>';
+Hector.Builders.templates["ViewDeclaration"] = '<%=Hector.options.namespace%>.$constructorName = Backbone.View.extend({\n    <% print(attributes.join(Hector.comma)); %>\n});';

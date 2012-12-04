@@ -9,5 +9,5 @@ var $varName = (typeof $constructorName !== "undefined")
     ? new $constructorName
     : new HectorOptions.elementConstructor("$constructorName");
 $inner
-$contextName.append($varName);
+$contextName.$el.append($varName);
 <% } %>

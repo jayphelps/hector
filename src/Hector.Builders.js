@@ -120,7 +120,7 @@ Hector.Builders = (function (window, document) {
                  .split("\t").join("\");")
                  .split("%>").join("p.push(\"")
                  .split("\r").join("\\'")
-                 .replace(/\$/gm, "")
+                 //.replace(/\$/gm, "")
             + "\");return p.join(\"\");";
 
         keys.push(str);
@@ -226,7 +226,6 @@ Hector.Builders = (function (window, document) {
 
         out += renderTemplate("ViewStatement", {
             contextName: contextName,
-            appendChild: viewMethods.appendChild,
             varName: varName,
             constructorName: constructorName,
             isConditional: isConditional,

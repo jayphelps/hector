@@ -47,6 +47,7 @@ PEGJS    = $(PEGJS_BIN_DIR)/pegjs
 NODE     = node
 UGLIFYJS = uglifyjs
 INDENT   = sed 's/^/    /'
+READLINK = sh tools/scripts/readlink.sh
 
 # Flags ==================================================================
 
@@ -65,7 +66,7 @@ build:
 	done
 	@for templateName in $(TEMPLATES); do                                                  \
 	    printf "$(PROJECT_NAME).Builders.templates[\"$$templateName\"] = '"  >> $(BUFFER); \
-		perl tools/scripts/openfile.pl $(TEMPLATE_DIR)/$$templateName | perl -p -e 's/\n/\\n/g' | tr "'" "\"" >> $(BUFFER); \
+		$(READLINK) $(TEMPLATE_DIR)/$$templateName | xargs perl -p -e 's/\n/\\n/g' | tr "'" "\"" >> $(BUFFER); \
 	    printf "';\n"                                                        >> $(BUFFER); \
 	done
 	@cat $(BUFFER) > $(OUTPUT_FILE)

@@ -17,7 +17,8 @@ var Hector = (function (window, document) {
         log: true,
         debug: true,
         buffer: true,
-        elementConstructor: ElementContainer,
+        elementConstructor: ElementConstructor,
+        textNodeConstructor: TextNodeConstructor,
         namespace: "window",
         target: "javascript/hector"
     };
@@ -133,30 +134,30 @@ var Hector = (function (window, document) {
         throw Error("StringBuilder#render has no implementation, did you mean StringBuilder#renderBuffer?");
     };
 
-    function TextNodeContainer(value) {
+    function TextNodeConstructor(value) {
         if (!options.buffer) return document.createTextNode(value);
 
         this.value = value;
         this.isRendered = false;
     }
 
-    Hector.TextNodeContainer = TextNodeContainer;
+    Hector.TextNodeConstructor = TextNodeConstructor;
 
-    TextNodeContainer.prototype.appendChild = function (child) {
-        throw Error("TextNodeContainer has no appendChild");
+    TextNodeConstructor.prototype.appendChild = function (child) {
+        throw Error("TextNodeConstructor has no appendChild");
     };
 
-    TextNodeContainer.prototype.renderBuffer = function () {
+    TextNodeConstructor.prototype.renderBuffer = function () {
         return this.value;
     };
 
-    TextNodeContainer.prototype.render = function () {
+    TextNodeConstructor.prototype.render = function () {
         var out = this.renderBuffer();
         this.layer = document.createTextNode(out);
         this.isRendered = true;
     };
 
-    function ElementContainer(tagName) {
+    function ElementConstructor(tagName) {
         if (!options.buffer) return document.createElement(tagName);
 
         this.tagName = tagName;
@@ -165,17 +166,17 @@ var Hector = (function (window, document) {
         this.isRendered = false;
     }
 
-    Hector.ElementContainer = ElementContainer;
+    Hector.ElementConstructor = ElementConstructor;
 
-    ElementContainer.prototype.attributeMap = {
+    ElementConstructor.prototype.attributeMap = {
         className: "class"
     };
 
-    ElementContainer.prototype.appendChild = function (child) {
+    ElementConstructor.prototype.appendChild = function (child) {
         this.children.push(child);
     };
 
-    ElementContainer.prototype.renderAttributes = function () {
+    ElementConstructor.prototype.renderAttributes = function () {
         var attrs = [];
         var attributeMap = this.attributeMap;
         var value;
@@ -205,7 +206,7 @@ var Hector = (function (window, document) {
         return attrs.join(" ");
     };
 
-    ElementContainer.prototype.renderBuffer = function () {
+    ElementConstructor.prototype.renderBuffer = function () {
         var out = "";
         var tagName = this.tagName;
         var children = this.children;
@@ -222,7 +223,7 @@ var Hector = (function (window, document) {
         return out;
     };
 
-    ElementContainer.prototype.render = function () {
+    ElementConstructor.prototype.render = function () {
         var out = this.renderBuffer();
         this.layer = stringToElement(out);
         this.isRendered = true;
@@ -246,7 +247,7 @@ var Hector = (function (window, document) {
 
         // If reached, we're going to just convert it to a text node, regardless
         // of what it is. (Object, String, Number, RegExp, etc)
-        var node = new TextNodeContainer(value);
+        var node = new options.textNodeConstructor(value);
 
         // Prefer appendNode, if they've got it
         if (this.appendNode) {
