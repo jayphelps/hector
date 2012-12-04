@@ -1,5 +1,6 @@
 $(function () {
-
+    
+    
     /**
      * Helper method to add more members to an already existing View
      */

@@ -2,12 +2,12 @@
 if (typeof $constructorName !== "undefined") {
     var $varName = new $constructorName();
     $inner
-    $contextName.$appendChild($varName);
+    $contextName.append($varName);
 }
 <% } else { %>
 var $varName = (typeof $constructorName !== "undefined")
     ? new $constructorName
-    : new HectorOptions.baseConstructor("$constructorName");
+    : new HectorOptions.elementConstructor("$constructorName");
 $inner
-$contextName.$appendChild($varName);
+$contextName.append($varName);
 <% } %>

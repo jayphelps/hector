@@ -2147,7 +2147,7 @@ Hector.Parser = (function(){
         
         r1 = pos;
         r2 = pos;
-        r3 = parse_Identifier();
+        r3 = parse_Property();
         if (r3 !== null) {
           r4 = parse___();
           if (r4 !== null) {
@@ -2207,7 +2207,7 @@ Hector.Parser = (function(){
           r2 = pos;
           r3 = parse_Variable();
           if (r3 === null) {
-            r3 = parse_Identifier();
+            r3 = parse_Property();
           }
           if (r3 !== null) {
             r4 = parse___();
@@ -2330,7 +2330,7 @@ Hector.Parser = (function(){
         
         r1 = pos;
         r2 = pos;
-        r3 = parse_Identifier();
+        r3 = parse_Property();
         if (r3 !== null) {
           r4 = parse___();
           if (r4 !== null) {

@@ -184,7 +184,7 @@ Children
     / Arguments
 
 ViewStatement
-    = id:Identifier __ attributes:Attributes? __ ";" {
+    = id:Property __ attributes:Attributes? __ ";" {
         return {
             type: "ViewStatement",
             constructorName: id,
@@ -193,7 +193,7 @@ ViewStatement
             children: []
         };
     }
-    / id:(Variable / Identifier) __ attributes:Attributes? __ "{" children:(__ Children)* __ "}" {
+    / id:(Variable / Property) __ attributes:Attributes? __ "{" children:(__ Children)* __ "}" {
         children = children[0];
         return {
             type: "ViewStatement",
@@ -205,7 +205,7 @@ ViewStatement
     }
 
 ViewStatementNoEOL
-    = id:Identifier __ attributes:Attributes? {
+    = id:Property __ attributes:Attributes? {
         return {
             type: "ViewStatement",
             constructorName: id,

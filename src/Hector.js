@@ -1,8 +1,12 @@
 /**
  * Hector.js
  * (c) 2012 Jay Phelps
- * MIT licensed
+ * MIT Licensed
  * https://github.com/jayphelps/hector
+ * 
+ * Simple JavaScript Inheritance
+ * John Resig http://ejohn.org/
+ * MIT Licensed
  */
 var Hector = (function (window, document) {
     "use strict";
@@ -11,13 +15,11 @@ var Hector = (function (window, document) {
 
     var options = Hector.options = {
         log: true,
-        viewMethods: {
-            appendChild: "appendChild"
-        },
         debug: true,
         buffer: true,
-        baseConstructor: ElementContainer,
-        namespace: "window"
+        elementConstructor: ElementContainer,
+        namespace: "window",
+        target: "javascript/hector"
     };
 
     // ======================
