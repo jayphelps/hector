@@ -16,7 +16,8 @@ var Hector = (function (window, document) {
         },
         debug: true,
         buffer: true,
-        baseConstructor: ElementContainer
+        baseConstructor: ElementContainer,
+        namespace: "window"
     };
 
     // ======================
@@ -81,6 +82,8 @@ var Hector = (function (window, document) {
     // =========================
 
     Hector.parseTreeNode = function (node, contextName) {
+        if (!node || !node.type) return node;
+
         var builder = Hector.Builders[node.type];
         if (!builder) throw Error("No builder for type: " + node.type);
 
@@ -90,10 +93,10 @@ var Hector = (function (window, document) {
     };
 
     Hector.walkTree = function (tree, contextName) {
-        var out = "";
+        var out = [];
 
         for (var i = 0, l = tree.length; i < l; i++) {
-            out += Hector.parseTreeNode(tree[i], contextName);
+            out.push(Hector.parseTreeNode(tree[i], contextName));
         }
         
         return out;
@@ -307,11 +310,18 @@ var Hector = (function (window, document) {
 
         log(tree, "ParseTree");
 
-        var output = Hector.walkTree(tree.nodes, "this");
+        var output = Hector.walkTree(tree.nodes, "this").join("");
 
         log(output, "TemplateOutput");
     
         return output;
+    };
+
+    Hector.eval = function (source) {
+        var output = Hector.compile(source);
+        var script = document.createElement("script");
+        script.appendChild(document.createTextNode(output));
+        (document.body || document.head || document.documentElement).appendChild(script);
     };
 
     return Hector;
@@ -478,7 +488,7 @@ Hector.Parser = (function(){
         r2 = pos;
         r3 = parse___();
         if (r3 !== null) {
-          r4 = parse_template();
+          r4 = parse_Template();
           if (r4 !== null) {
             r5 = parse___();
             if (r5 !== null) {
@@ -507,18 +517,750 @@ Hector.Parser = (function(){
         return r0;
       }
       
-      function parse_template() {
+      function parse_SourceCharacter() {
+        var r0;
+        
+        if (input.length > pos) {
+          r0 = input.charAt(pos);
+          pos++;
+        } else {
+          r0 = null;
+          if (reportFailures === 0) {
+            matchFailed("any character");
+          }
+        }
+        return r0;
+      }
+      
+      function parse_EOL() {
+        var r0;
+        
+        reportFailures++;
+        if (/^[\n\r]/.test(input.charAt(pos))) {
+          r0 = input.charAt(pos);
+          pos++;
+        } else {
+          r0 = null;
+          if (reportFailures === 0) {
+            matchFailed("[\\n\\r]");
+          }
+        }
+        reportFailures--;
+        if (reportFailures === 0 && r0 === null) {
+          matchFailed("end of line");
+        }
+        return r0;
+      }
+      
+      function parse_EOF() {
         var r0, r1;
         
         r1 = pos;
-        r0 = parse_rootElements();
-        r0 = r0 !== null ? r0 : "";
+        reportFailures++;
+        if (input.length > pos) {
+          r0 = input.charAt(pos);
+          pos++;
+        } else {
+          r0 = null;
+          if (reportFailures === 0) {
+            matchFailed("any character");
+          }
+        }
+        reportFailures--;
+        if (r0 === null) {
+          r0 = "";
+        } else {
+          r0 = null;
+          pos = r1;
+        }
+        return r0;
+      }
+      
+      function parse_WhiteSpace() {
+        var r0;
+        
+        reportFailures++;
+        if (/^[ \t\x0B\f]/.test(input.charAt(pos))) {
+          r0 = input.charAt(pos);
+          pos++;
+        } else {
+          r0 = null;
+          if (reportFailures === 0) {
+            matchFailed("[ \\t\\x0B\\f]");
+          }
+        }
+        reportFailures--;
+        if (reportFailures === 0 && r0 === null) {
+          matchFailed("whitespace");
+        }
+        return r0;
+      }
+      
+      function parse_Comment() {
+        var r0;
+        
+        reportFailures++;
+        r0 = parse_MultiLineComment();
+        if (r0 === null) {
+          r0 = parse_SingleLineComment();
+        }
+        reportFailures--;
+        if (reportFailures === 0 && r0 === null) {
+          matchFailed("comment");
+        }
+        return r0;
+      }
+      
+      function parse_MultiLineComment() {
+        var r0, r1, r2, r3, r4, r5, r6, r7;
+        
+        r1 = pos;
+        if (input.substr(pos, 2) === "/*") {
+          r2 = "/*";
+          pos += 2;
+        } else {
+          r2 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"/*\"");
+          }
+        }
+        if (r2 !== null) {
+          r3 = [];
+          r5 = pos;
+          r7 = pos;
+          reportFailures++;
+          if (input.substr(pos, 2) === "*/") {
+            r6 = "*/";
+            pos += 2;
+          } else {
+            r6 = null;
+            if (reportFailures === 0) {
+              matchFailed("\"*/\"");
+            }
+          }
+          reportFailures--;
+          if (r6 === null) {
+            r6 = "";
+          } else {
+            r6 = null;
+            pos = r7;
+          }
+          if (r6 !== null) {
+            r7 = parse_SourceCharacter();
+            if (r7 !== null) {
+              r4 = [r6, r7];
+            } else {
+              r4 = null;
+              pos = r5;
+            }
+          } else {
+            r4 = null;
+            pos = r5;
+          }
+          while (r4 !== null) {
+            r3.push(r4);
+            r5 = pos;
+            r7 = pos;
+            reportFailures++;
+            if (input.substr(pos, 2) === "*/") {
+              r6 = "*/";
+              pos += 2;
+            } else {
+              r6 = null;
+              if (reportFailures === 0) {
+                matchFailed("\"*/\"");
+              }
+            }
+            reportFailures--;
+            if (r6 === null) {
+              r6 = "";
+            } else {
+              r6 = null;
+              pos = r7;
+            }
+            if (r6 !== null) {
+              r7 = parse_SourceCharacter();
+              if (r7 !== null) {
+                r4 = [r6, r7];
+              } else {
+                r4 = null;
+                pos = r5;
+              }
+            } else {
+              r4 = null;
+              pos = r5;
+            }
+          }
+          if (r3 !== null) {
+            if (input.substr(pos, 2) === "*/") {
+              r4 = "*/";
+              pos += 2;
+            } else {
+              r4 = null;
+              if (reportFailures === 0) {
+                matchFailed("\"*/\"");
+              }
+            }
+            if (r4 !== null) {
+              r0 = [r2, r3, r4];
+            } else {
+              r0 = null;
+              pos = r1;
+            }
+          } else {
+            r0 = null;
+            pos = r1;
+          }
+        } else {
+          r0 = null;
+          pos = r1;
+        }
+        return r0;
+      }
+      
+      function parse_MultiLineCommentNoEOL() {
+        var r0, r1, r2, r3, r4, r5, r6, r7;
+        
+        r1 = pos;
+        if (input.substr(pos, 2) === "/*") {
+          r2 = "/*";
+          pos += 2;
+        } else {
+          r2 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"/*\"");
+          }
+        }
+        if (r2 !== null) {
+          r3 = [];
+          r5 = pos;
+          r7 = pos;
+          reportFailures++;
+          if (input.substr(pos, 2) === "*/") {
+            r6 = "*/";
+            pos += 2;
+          } else {
+            r6 = null;
+            if (reportFailures === 0) {
+              matchFailed("\"*/\"");
+            }
+          }
+          if (r6 === null) {
+            r6 = parse_EOL();
+          }
+          reportFailures--;
+          if (r6 === null) {
+            r6 = "";
+          } else {
+            r6 = null;
+            pos = r7;
+          }
+          if (r6 !== null) {
+            r7 = parse_SourceCharacter();
+            if (r7 !== null) {
+              r4 = [r6, r7];
+            } else {
+              r4 = null;
+              pos = r5;
+            }
+          } else {
+            r4 = null;
+            pos = r5;
+          }
+          while (r4 !== null) {
+            r3.push(r4);
+            r5 = pos;
+            r7 = pos;
+            reportFailures++;
+            if (input.substr(pos, 2) === "*/") {
+              r6 = "*/";
+              pos += 2;
+            } else {
+              r6 = null;
+              if (reportFailures === 0) {
+                matchFailed("\"*/\"");
+              }
+            }
+            if (r6 === null) {
+              r6 = parse_EOL();
+            }
+            reportFailures--;
+            if (r6 === null) {
+              r6 = "";
+            } else {
+              r6 = null;
+              pos = r7;
+            }
+            if (r6 !== null) {
+              r7 = parse_SourceCharacter();
+              if (r7 !== null) {
+                r4 = [r6, r7];
+              } else {
+                r4 = null;
+                pos = r5;
+              }
+            } else {
+              r4 = null;
+              pos = r5;
+            }
+          }
+          if (r3 !== null) {
+            if (input.substr(pos, 2) === "*/") {
+              r4 = "*/";
+              pos += 2;
+            } else {
+              r4 = null;
+              if (reportFailures === 0) {
+                matchFailed("\"*/\"");
+              }
+            }
+            if (r4 !== null) {
+              r0 = [r2, r3, r4];
+            } else {
+              r0 = null;
+              pos = r1;
+            }
+          } else {
+            r0 = null;
+            pos = r1;
+          }
+        } else {
+          r0 = null;
+          pos = r1;
+        }
+        return r0;
+      }
+      
+      function parse_SingleLineComment() {
+        var r0, r1, r2, r3, r4, r5, r6, r7;
+        
+        r1 = pos;
+        if (input.substr(pos, 2) === "//") {
+          r2 = "//";
+          pos += 2;
+        } else {
+          r2 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"//\"");
+          }
+        }
+        if (r2 !== null) {
+          r3 = [];
+          r5 = pos;
+          r7 = pos;
+          reportFailures++;
+          r6 = parse_EOL();
+          reportFailures--;
+          if (r6 === null) {
+            r6 = "";
+          } else {
+            r6 = null;
+            pos = r7;
+          }
+          if (r6 !== null) {
+            r7 = parse_SourceCharacter();
+            if (r7 !== null) {
+              r4 = [r6, r7];
+            } else {
+              r4 = null;
+              pos = r5;
+            }
+          } else {
+            r4 = null;
+            pos = r5;
+          }
+          while (r4 !== null) {
+            r3.push(r4);
+            r5 = pos;
+            r7 = pos;
+            reportFailures++;
+            r6 = parse_EOL();
+            reportFailures--;
+            if (r6 === null) {
+              r6 = "";
+            } else {
+              r6 = null;
+              pos = r7;
+            }
+            if (r6 !== null) {
+              r7 = parse_SourceCharacter();
+              if (r7 !== null) {
+                r4 = [r6, r7];
+              } else {
+                r4 = null;
+                pos = r5;
+              }
+            } else {
+              r4 = null;
+              pos = r5;
+            }
+          }
+          if (r3 !== null) {
+            r0 = [r2, r3];
+          } else {
+            r0 = null;
+            pos = r1;
+          }
+        } else {
+          r0 = null;
+          pos = r1;
+        }
+        return r0;
+      }
+      
+      function parse__() {
+        var r0, r1;
+        
+        r0 = [];
+        r1 = parse_WhiteSpace();
+        if (r1 === null) {
+          r1 = parse_MultiLineCommentNoEOL();
+          if (r1 === null) {
+            r1 = parse_SingleLineComment();
+          }
+        }
+        while (r1 !== null) {
+          r0.push(r1);
+          r1 = parse_WhiteSpace();
+          if (r1 === null) {
+            r1 = parse_MultiLineCommentNoEOL();
+            if (r1 === null) {
+              r1 = parse_SingleLineComment();
+            }
+          }
+        }
+        return r0;
+      }
+      
+      function parse___() {
+        var r0, r1;
+        
+        r0 = [];
+        r1 = parse_WhiteSpace();
+        if (r1 === null) {
+          r1 = parse_EOL();
+          if (r1 === null) {
+            r1 = parse_Comment();
+          }
+        }
+        while (r1 !== null) {
+          r0.push(r1);
+          r1 = parse_WhiteSpace();
+          if (r1 === null) {
+            r1 = parse_EOL();
+            if (r1 === null) {
+              r1 = parse_Comment();
+            }
+          }
+        }
+        return r0;
+      }
+      
+      function parse_DoubleStringCharacters() {
+        var r0, r1, r2;
+        
+        r1 = pos;
+        r2 = parse_DoubleStringCharacter();
+        if (r2 !== null) {
+          r0 = [];
+          while (r2 !== null) {
+            r0.push(r2);
+            r2 = parse_DoubleStringCharacter();
+          }
+        } else {
+          r0 = null;
+        }
         if (r0 !== null) {
           reportedPos = r1;
-          r0 = (function(nodes) {
-                return {
-                    nodes: nodes
-                };
+          r0 = (function(chars) { return chars.join(""); })(r0);
+        }
+        if (r0 === null) {
+          pos = r1;
+        }
+        return r0;
+      }
+      
+      function parse_SingleStringCharacters() {
+        var r0, r1, r2;
+        
+        r1 = pos;
+        r2 = parse_SingleStringCharacter();
+        if (r2 !== null) {
+          r0 = [];
+          while (r2 !== null) {
+            r0.push(r2);
+            r2 = parse_SingleStringCharacter();
+          }
+        } else {
+          r0 = null;
+        }
+        if (r0 !== null) {
+          reportedPos = r1;
+          r0 = (function(chars) { return chars.join(""); })(r0);
+        }
+        if (r0 === null) {
+          pos = r1;
+        }
+        return r0;
+      }
+      
+      function parse_DoubleStringCharacter() {
+        var r0, r1, r2, r3, r4;
+        
+        r1 = pos;
+        r2 = pos;
+        r4 = pos;
+        reportFailures++;
+        if (input.charCodeAt(pos) === 34) {
+          r3 = "\"";
+          pos++;
+        } else {
+          r3 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"\\\"\"");
+          }
+        }
+        if (r3 === null) {
+          if (input.charCodeAt(pos) === 92) {
+            r3 = "\\";
+            pos++;
+          } else {
+            r3 = null;
+            if (reportFailures === 0) {
+              matchFailed("\"\\\\\"");
+            }
+          }
+          if (r3 === null) {
+            r3 = parse_EOL();
+          }
+        }
+        reportFailures--;
+        if (r3 === null) {
+          r3 = "";
+        } else {
+          r3 = null;
+          pos = r4;
+        }
+        if (r3 !== null) {
+          r4 = parse_SourceCharacter();
+          if (r4 !== null) {
+            r0 = [r3, r4];
+          } else {
+            r0 = null;
+            pos = r2;
+          }
+        } else {
+          r0 = null;
+          pos = r2;
+        }
+        if (r0 !== null) {
+          reportedPos = r1;
+          r0 = (function(char_) { return char_;    })(r4);
+        }
+        if (r0 === null) {
+          pos = r1;
+        }
+        if (r0 === null) {
+          r1 = pos;
+          r2 = pos;
+          if (input.charCodeAt(pos) === 92) {
+            r3 = "\\";
+            pos++;
+          } else {
+            r3 = null;
+            if (reportFailures === 0) {
+              matchFailed("\"\\\\\"");
+            }
+          }
+          if (r3 !== null) {
+            r4 = parse_CharacterEscapeSequence();
+            if (r4 !== null) {
+              r0 = [r3, r4];
+            } else {
+              r0 = null;
+              pos = r2;
+            }
+          } else {
+            r0 = null;
+            pos = r2;
+          }
+          if (r0 !== null) {
+            reportedPos = r1;
+            r0 = (function(sequence) { return sequence; })(r4);
+          }
+          if (r0 === null) {
+            pos = r1;
+          }
+          if (r0 === null) {
+            r0 = parse_LineContinuation();
+          }
+        }
+        return r0;
+      }
+      
+      function parse_SingleStringCharacter() {
+        var r0, r1, r2, r3, r4;
+        
+        r1 = pos;
+        r2 = pos;
+        r4 = pos;
+        reportFailures++;
+        if (input.charCodeAt(pos) === 39) {
+          r3 = "'";
+          pos++;
+        } else {
+          r3 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"'\"");
+          }
+        }
+        if (r3 === null) {
+          if (input.charCodeAt(pos) === 92) {
+            r3 = "\\";
+            pos++;
+          } else {
+            r3 = null;
+            if (reportFailures === 0) {
+              matchFailed("\"\\\\\"");
+            }
+          }
+          if (r3 === null) {
+            r3 = parse_EOL();
+          }
+        }
+        reportFailures--;
+        if (r3 === null) {
+          r3 = "";
+        } else {
+          r3 = null;
+          pos = r4;
+        }
+        if (r3 !== null) {
+          r4 = parse_SourceCharacter();
+          if (r4 !== null) {
+            r0 = [r3, r4];
+          } else {
+            r0 = null;
+            pos = r2;
+          }
+        } else {
+          r0 = null;
+          pos = r2;
+        }
+        if (r0 !== null) {
+          reportedPos = r1;
+          r0 = (function(char_) { return char_;    })(r4);
+        }
+        if (r0 === null) {
+          pos = r1;
+        }
+        if (r0 === null) {
+          r1 = pos;
+          r2 = pos;
+          if (input.charCodeAt(pos) === 92) {
+            r3 = "\\";
+            pos++;
+          } else {
+            r3 = null;
+            if (reportFailures === 0) {
+              matchFailed("\"\\\\\"");
+            }
+          }
+          if (r3 !== null) {
+            r4 = parse_CharacterEscapeSequence();
+            if (r4 !== null) {
+              r0 = [r3, r4];
+            } else {
+              r0 = null;
+              pos = r2;
+            }
+          } else {
+            r0 = null;
+            pos = r2;
+          }
+          if (r0 !== null) {
+            reportedPos = r1;
+            r0 = (function(sequence) { return sequence; })(r4);
+          }
+          if (r0 === null) {
+            pos = r1;
+          }
+          if (r0 === null) {
+            r0 = parse_LineContinuation();
+          }
+        }
+        return r0;
+      }
+      
+      function parse_LineContinuation() {
+        var r0, r1, r2, r3, r4;
+        
+        r1 = pos;
+        r2 = pos;
+        if (input.charCodeAt(pos) === 92) {
+          r3 = "\\";
+          pos++;
+        } else {
+          r3 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"\\\\\"");
+          }
+        }
+        if (r3 !== null) {
+          r4 = parse_EOL();
+          if (r4 !== null) {
+            r0 = [r3, r4];
+          } else {
+            r0 = null;
+            pos = r2;
+          }
+        } else {
+          r0 = null;
+          pos = r2;
+        }
+        if (r0 !== null) {
+          reportedPos = r1;
+          r0 = (function(sequence) { return sequence; })(r4);
+        }
+        if (r0 === null) {
+          pos = r1;
+        }
+        return r0;
+      }
+      
+      function parse_CharacterEscapeSequence() {
+        var r0;
+        
+        r0 = parse_SingleEscapeCharacter();
+        if (r0 === null) {
+          r0 = parse_NonEscapeCharacter();
+        }
+        return r0;
+      }
+      
+      function parse_SingleEscapeCharacter() {
+        var r0, r1;
+        
+        r1 = pos;
+        if (/^['"\\bfnrtv]/.test(input.charAt(pos))) {
+          r0 = input.charAt(pos);
+          pos++;
+        } else {
+          r0 = null;
+          if (reportFailures === 0) {
+            matchFailed("['\"\\\\bfnrtv]");
+          }
+        }
+        if (r0 !== null) {
+          reportedPos = r1;
+          r0 = (function(char_) {
+                return char_
+                    .replace("b", "\b")
+                    .replace("f", "\f")
+                    .replace("n", "\n")
+                    .replace("r", "\r")
+                    .replace("t", "\t")
+                    .replace("v", "\x0B") // IE does not recognize "\v".
             })(r0);
         }
         if (r0 === null) {
@@ -527,44 +1269,130 @@ Hector.Parser = (function(){
         return r0;
       }
       
-      function parse_rootElements() {
-        var r0, r1, r2, r3, r4, r5, r6, r7, r8;
+      function parse_NonEscapeCharacter() {
+        var r0, r1, r2, r3, r4;
         
         r1 = pos;
         r2 = pos;
-        r3 = parse_rootElement();
+        r4 = pos;
+        reportFailures++;
+        r3 = parse_EscapeCharacter();
+        reportFailures--;
+        if (r3 === null) {
+          r3 = "";
+        } else {
+          r3 = null;
+          pos = r4;
+        }
+        if (r3 === null) {
+          r3 = parse_EOL();
+        }
+        if (r3 !== null) {
+          r4 = parse_SourceCharacter();
+          if (r4 !== null) {
+            r0 = [r3, r4];
+          } else {
+            r0 = null;
+            pos = r2;
+          }
+        } else {
+          r0 = null;
+          pos = r2;
+        }
+        if (r0 !== null) {
+          reportedPos = r1;
+          r0 = (function(char_) { return char_; })(r4);
+        }
+        if (r0 === null) {
+          pos = r1;
+        }
+        return r0;
+      }
+      
+      function parse_EscapeCharacter() {
+        var r0;
+        
+        r0 = parse_SingleEscapeCharacter();
+        if (r0 === null) {
+          r0 = parse_DecimalDigit();
+          if (r0 === null) {
+            if (input.charCodeAt(pos) === 120) {
+              r0 = "x";
+              pos++;
+            } else {
+              r0 = null;
+              if (reportFailures === 0) {
+                matchFailed("\"x\"");
+              }
+            }
+            if (r0 === null) {
+              if (input.charCodeAt(pos) === 117) {
+                r0 = "u";
+                pos++;
+              } else {
+                r0 = null;
+                if (reportFailures === 0) {
+                  matchFailed("\"u\"");
+                }
+              }
+            }
+          }
+        }
+        return r0;
+      }
+      
+      function parse_DecimalDigits() {
+        var r0, r1, r2;
+        
+        r1 = pos;
+        r2 = parse_DecimalDigit();
+        if (r2 !== null) {
+          r0 = [];
+          while (r2 !== null) {
+            r0.push(r2);
+            r2 = parse_DecimalDigit();
+          }
+        } else {
+          r0 = null;
+        }
+        if (r0 !== null) {
+          reportedPos = r1;
+          r0 = (function(digits) { return digits.join(""); })(r0);
+        }
+        if (r0 === null) {
+          pos = r1;
+        }
+        return r0;
+      }
+      
+      function parse_DecimalDigit() {
+        var r0;
+        
+        if (/^[0-9]/.test(input.charAt(pos))) {
+          r0 = input.charAt(pos);
+          pos++;
+        } else {
+          r0 = null;
+          if (reportFailures === 0) {
+            matchFailed("[0-9]");
+          }
+        }
+        return r0;
+      }
+      
+      function parse_Identifier() {
+        var r0, r1, r2, r3, r4, r5;
+        
+        reportFailures++;
+        r1 = pos;
+        r2 = pos;
+        r3 = parse_IdentifierStart();
         if (r3 !== null) {
           r4 = [];
-          r6 = pos;
-          r7 = parse___();
-          if (r7 !== null) {
-            r8 = parse_rootElement();
-            if (r8 !== null) {
-              r5 = [r7, r8];
-            } else {
-              r5 = null;
-              pos = r6;
-            }
-          } else {
-            r5 = null;
-            pos = r6;
-          }
+          r5 = parse_IdentifierPart();
           while (r5 !== null) {
             r4.push(r5);
-            r6 = pos;
-            r7 = parse___();
-            if (r7 !== null) {
-              r8 = parse_rootElement();
-              if (r8 !== null) {
-                r5 = [r7, r8];
-              } else {
-                r5 = null;
-                pos = r6;
-              }
-            } else {
-              r5 = null;
-              pos = r6;
-            }
+            r5 = parse_IdentifierPart();
           }
           if (r4 !== null) {
             r0 = [r3, r4];
@@ -578,323 +1406,622 @@ Hector.Parser = (function(){
         }
         if (r0 !== null) {
           reportedPos = r1;
-          r0 = (function(head, tail) {
-                var result = [head];
-                for (var i = 0, l = tail.length; i < l; i++) {
-                    result.push(tail[i][1]);
-                }
-        
-                return result;
+          r0 = (function(start, parts) {
+                var str = start + parts.join("");
+                Hector.symbols.add(str);
+                return str;
             })(r3, r4);
         }
         if (r0 === null) {
           pos = r1;
         }
+        reportFailures--;
+        if (reportFailures === 0 && r0 === null) {
+          matchFailed("identifier");
+        }
         return r0;
       }
       
-      function parse_rootElement() {
-        var r0, r1;
+      function parse_IdentifierStart() {
+        var r0;
         
-        r0 = parse_variableStatement();
+        if (/^[a-zA-Z_]/.test(input.charAt(pos))) {
+          r0 = input.charAt(pos);
+          pos++;
+        } else {
+          r0 = null;
+          if (reportFailures === 0) {
+            matchFailed("[a-zA-Z_]");
+          }
+        }
+        return r0;
+      }
+      
+      function parse_IdentifierPart() {
+        var r0;
+        
+        r0 = parse_IdentifierStart();
         if (r0 === null) {
-          r0 = parse_viewDeclaration();
-          if (r0 === null) {
-            r0 = parse_viewInstance();
-            if (r0 === null) {
-              r0 = parse_helper();
-              if (r0 === null) {
-                r1 = pos;
-                r0 = parse_stringLiteral();
-                if (r0 !== null) {
-                  reportedPos = r1;
-                  r0 = (function(value) {
-                        return {
-                            type: "String",
-                            attributes: [],
-                            value: value
-                        };
-                    })(r0);
-                }
-                if (r0 === null) {
-                  pos = r1;
-                }
-              }
+          if (/^[0-9]/.test(input.charAt(pos))) {
+            r0 = input.charAt(pos);
+            pos++;
+          } else {
+            r0 = null;
+            if (reportFailures === 0) {
+              matchFailed("[0-9]");
             }
           }
         }
         return r0;
       }
       
-      function parse_elements() {
-        var r0, r1, r2, r3, r4, r5, r6, r7, r8;
+      function parse_DEF() {
+        var r0, r1, r2, r3, r4;
         
         r1 = pos;
-        r2 = pos;
-        r3 = parse_element();
-        if (r3 !== null) {
-          r4 = [];
-          r6 = pos;
-          r7 = parse___();
-          if (r7 !== null) {
-            r8 = parse_element();
-            if (r8 !== null) {
-              r5 = [r7, r8];
-            } else {
-              r5 = null;
-              pos = r6;
-            }
+        if (input.substr(pos, 3) === "def") {
+          r2 = "def";
+          pos += 3;
+        } else {
+          r2 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"def\"");
+          }
+        }
+        if (r2 !== null) {
+          r4 = pos;
+          reportFailures++;
+          r3 = parse_IdentifierPart();
+          reportFailures--;
+          if (r3 === null) {
+            r3 = "";
           } else {
-            r5 = null;
-            pos = r6;
+            r3 = null;
+            pos = r4;
           }
-          while (r5 !== null) {
-            r4.push(r5);
-            r6 = pos;
-            r7 = parse___();
-            if (r7 !== null) {
-              r8 = parse_element();
-              if (r8 !== null) {
-                r5 = [r7, r8];
-              } else {
-                r5 = null;
-                pos = r6;
-              }
-            } else {
-              r5 = null;
-              pos = r6;
-            }
-          }
-          if (r4 !== null) {
-            r0 = [r3, r4];
+          if (r3 !== null) {
+            r0 = [r2, r3];
           } else {
             r0 = null;
-            pos = r2;
+            pos = r1;
           }
         } else {
           r0 = null;
-          pos = r2;
-        }
-        if (r0 !== null) {
-          reportedPos = r1;
-          r0 = (function(head, tail) {
-                var result = [head];
-                for (var i = 0, l = tail.length; i < l; i++) {
-                    result.push(tail[i][1]);
-                }
-        
-                return result;
-            })(r3, r4);
-        }
-        if (r0 === null) {
           pos = r1;
         }
         return r0;
       }
       
-      function parse_element() {
-        var r0, r1;
+      function parse_SAFE_ACCESS() {
+        var r0, r1, r2, r3, r4;
         
-        r0 = parse_variableStatement();
-        if (r0 === null) {
-          r0 = parse_viewInstance();
-          if (r0 === null) {
-            r0 = parse_helper();
-            if (r0 === null) {
-              r1 = pos;
-              r0 = parse_stringLiteral();
-              if (r0 !== null) {
-                reportedPos = r1;
-                r0 = (function(value) {
-                      return {
-                          type: "String",
-                          attributes: [],
-                          value: value
-                      };
-                  })(r0);
-              }
-              if (r0 === null) {
-                pos = r1;
-              }
-            }
+        r1 = pos;
+        if (input.charCodeAt(pos) === 63) {
+          r2 = "?";
+          pos++;
+        } else {
+          r2 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"?\"");
           }
+        }
+        if (r2 !== null) {
+          r4 = pos;
+          reportFailures++;
+          r3 = parse_IdentifierPart();
+          reportFailures--;
+          if (r3 === null) {
+            r3 = "";
+          } else {
+            r3 = null;
+            pos = r4;
+          }
+          if (r3 !== null) {
+            r0 = [r2, r3];
+          } else {
+            r0 = null;
+            pos = r1;
+          }
+        } else {
+          r0 = null;
+          pos = r1;
         }
         return r0;
       }
       
-      function parse_helper() {
-        var r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17;
+      function parse_StringLiteral() {
+        var r0, r1, r2, r3, r4, r5;
         
+        reportFailures++;
         r1 = pos;
         r2 = pos;
-        if (input.charCodeAt(pos) === 60) {
-          r3 = "<";
+        if (input.charCodeAt(pos) === 34) {
+          r3 = "\"";
           pos++;
         } else {
           r3 = null;
           if (reportFailures === 0) {
-            matchFailed("\"<\"");
+            matchFailed("\"\\\"\"");
           }
         }
         if (r3 !== null) {
+          r4 = parse_DoubleStringCharacters();
+          r4 = r4 !== null ? r4 : "";
+          if (r4 !== null) {
+            if (input.charCodeAt(pos) === 34) {
+              r5 = "\"";
+              pos++;
+            } else {
+              r5 = null;
+              if (reportFailures === 0) {
+                matchFailed("\"\\\"\"");
+              }
+            }
+            if (r5 !== null) {
+              r0 = [r3, r4, r5];
+            } else {
+              r0 = null;
+              pos = r2;
+            }
+          } else {
+            r0 = null;
+            pos = r2;
+          }
+        } else {
+          r0 = null;
+          pos = r2;
+        }
+        if (r0 === null) {
+          r2 = pos;
+          if (input.charCodeAt(pos) === 39) {
+            r3 = "'";
+            pos++;
+          } else {
+            r3 = null;
+            if (reportFailures === 0) {
+              matchFailed("\"'\"");
+            }
+          }
+          if (r3 !== null) {
+            r4 = parse_SingleStringCharacters();
+            r4 = r4 !== null ? r4 : "";
+            if (r4 !== null) {
+              if (input.charCodeAt(pos) === 39) {
+                r5 = "'";
+                pos++;
+              } else {
+                r5 = null;
+                if (reportFailures === 0) {
+                  matchFailed("\"'\"");
+                }
+              }
+              if (r5 !== null) {
+                r0 = [r3, r4, r5];
+              } else {
+                r0 = null;
+                pos = r2;
+              }
+            } else {
+              r0 = null;
+              pos = r2;
+            }
+          } else {
+            r0 = null;
+            pos = r2;
+          }
+        }
+        if (r0 !== null) {
+          reportedPos = r1;
+          r0 = (function(parts) {
+                return {
+                    type: "StringLiteral",
+                    attributes: [],
+                    value: "\"" + parts[1] + "\""
+                };
+            })(r0);
+        }
+        if (r0 === null) {
+          pos = r1;
+        }
+        reportFailures--;
+        if (reportFailures === 0 && r0 === null) {
+          matchFailed("string");
+        }
+        return r0;
+      }
+      
+      function parse_Variable() {
+        var r0, r1, r2, r3, r4, r5, r6, r7, r8;
+        
+        reportFailures++;
+        r1 = pos;
+        r2 = pos;
+        if (input.charCodeAt(pos) === 36) {
+          r3 = "$";
+          pos++;
+        } else {
+          r3 = null;
+          if (reportFailures === 0) {
+            matchFailed("\"$\"");
+          }
+        }
+        if (r3 !== null) {
+          r4 = parse_IdentifierStart();
+          if (r4 !== null) {
+            r5 = [];
+            r6 = parse_IdentifierPart();
+            while (r6 !== null) {
+              r5.push(r6);
+              r6 = parse_IdentifierPart();
+            }
+            if (r5 !== null) {
+              r6 = parse_SAFE_ACCESS();
+              r6 = r6 !== null ? r6 : "";
+              if (r6 !== null) {
+                r7 = parse___();
+                if (r7 !== null) {
+                  r8 = parse_Attributes();
+                  r8 = r8 !== null ? r8 : "";
+                  if (r8 !== null) {
+                    r0 = [r3, r4, r5, r6, r7, r8];
+                  } else {
+                    r0 = null;
+                    pos = r2;
+                  }
+                } else {
+                  r0 = null;
+                  pos = r2;
+                }
+              } else {
+                r0 = null;
+                pos = r2;
+              }
+            } else {
+              r0 = null;
+              pos = r2;
+            }
+          } else {
+            r0 = null;
+            pos = r2;
+          }
+        } else {
+          r0 = null;
+          pos = r2;
+        }
+        if (r0 !== null) {
+          reportedPos = r1;
+          r0 = (function(start, parts, useSafeAccess, attributes) {
+                var str = start + parts.join("");
+                Hector.symbols.add(str);
+                return {
+                    type: "Variable",
+                    value: str,
+                    isConditional: !!useSafeAccess,
+                    attributes: attributes || []
+                };
+            })(r4, r5, r6, r8);
+        }
+        if (r0 === null) {
+          pos = r1;
+        }
+        reportFailures--;
+        if (reportFailures === 0 && r0 === null) {
+          matchFailed("variable");
+        }
+        return r0;
+      }
+      
+      function parse_VariableStatement() {
+        var r0, r1, r2, r3, r4, r5;
+        
+        reportFailures++;
+        r1 = pos;
+        r2 = pos;
+        r3 = parse_Variable();
+        if (r3 !== null) {
           r4 = parse___();
           if (r4 !== null) {
-            r5 = parse_identifier();
+            if (input.charCodeAt(pos) === 59) {
+              r5 = ";";
+              pos++;
+            } else {
+              r5 = null;
+              if (reportFailures === 0) {
+                matchFailed("\";\"");
+              }
+            }
+            if (r5 !== null) {
+              r0 = [r3, r4, r5];
+            } else {
+              r0 = null;
+              pos = r2;
+            }
+          } else {
+            r0 = null;
+            pos = r2;
+          }
+        } else {
+          r0 = null;
+          pos = r2;
+        }
+        if (r0 !== null) {
+          reportedPos = r1;
+          r0 = (function(variable) {
+                variable.type = "VariableStatement";
+                return variable;
+            })(r3);
+        }
+        if (r0 === null) {
+          pos = r1;
+        }
+        reportFailures--;
+        if (reportFailures === 0 && r0 === null) {
+          matchFailed("variable");
+        }
+        return r0;
+      }
+      
+      function parse_Property() {
+        var r0, r1, r2, r3, r4, r5, r6, r7, r8;
+        
+        reportFailures++;
+        r1 = pos;
+        r2 = pos;
+        r3 = parse_Identifier();
+        if (r3 !== null) {
+          r4 = [];
+          r6 = pos;
+          if (input.charCodeAt(pos) === 46) {
+            r7 = ".";
+            pos++;
+          } else {
+            r7 = null;
+            if (reportFailures === 0) {
+              matchFailed("\".\"");
+            }
+          }
+          if (r7 !== null) {
+            r8 = parse_Identifier();
+            if (r8 !== null) {
+              r5 = [r7, r8];
+            } else {
+              r5 = null;
+              pos = r6;
+            }
+          } else {
+            r5 = null;
+            pos = r6;
+          }
+          while (r5 !== null) {
+            r4.push(r5);
+            r6 = pos;
+            if (input.charCodeAt(pos) === 46) {
+              r7 = ".";
+              pos++;
+            } else {
+              r7 = null;
+              if (reportFailures === 0) {
+                matchFailed("\".\"");
+              }
+            }
+            if (r7 !== null) {
+              r8 = parse_Identifier();
+              if (r8 !== null) {
+                r5 = [r7, r8];
+              } else {
+                r5 = null;
+                pos = r6;
+              }
+            } else {
+              r5 = null;
+              pos = r6;
+            }
+          }
+          if (r4 !== null) {
+            r0 = [r3, r4];
+          } else {
+            r0 = null;
+            pos = r2;
+          }
+        } else {
+          r0 = null;
+          pos = r2;
+        }
+        if (r0 !== null) {
+          reportedPos = r1;
+          r0 = (function(head, tail) {
+                var result = [head];
+                for (var i = 0, l = tail.length; i < l; i++) {
+                    result.push(tail[i][1]);
+                }
+        
+                return result.join(".");
+            })(r3, r4);
+        }
+        if (r0 === null) {
+          pos = r1;
+        }
+        reportFailures--;
+        if (reportFailures === 0 && r0 === null) {
+          matchFailed("property");
+        }
+        return r0;
+      }
+      
+      function parse_Attribute() {
+        var r0, r1, r2, r3, r4, r5, r6, r7;
+        
+        r1 = pos;
+        r2 = pos;
+        r3 = parse_Property();
+        if (r3 !== null) {
+          r4 = parse___();
+          if (r4 !== null) {
+            if (input.charCodeAt(pos) === 61) {
+              r5 = "=";
+              pos++;
+            } else {
+              r5 = null;
+              if (reportFailures === 0) {
+                matchFailed("\"=\"");
+              }
+            }
             if (r5 !== null) {
               r6 = parse___();
               if (r6 !== null) {
-                r7 = parse_identifier();
-                r7 = r7 !== null ? r7 : "";
+                r7 = parse_StringLiteral();
+                if (r7 === null) {
+                  r7 = parse_Variable();
+                  if (r7 === null) {
+                    r7 = parse_Identifier();
+                  }
+                }
+                if (r7 !== null) {
+                  r0 = [r3, r4, r5, r6, r7];
+                } else {
+                  r0 = null;
+                  pos = r2;
+                }
+              } else {
+                r0 = null;
+                pos = r2;
+              }
+            } else {
+              r0 = null;
+              pos = r2;
+            }
+          } else {
+            r0 = null;
+            pos = r2;
+          }
+        } else {
+          r0 = null;
+          pos = r2;
+        }
+        if (r0 !== null) {
+          reportedPos = r1;
+          r0 = (function(id, value) {
+                return {
+                    type: "AttributeStatement",
+                    key: id,
+                    value: value
+                }
+            })(r3, r7);
+        }
+        if (r0 === null) {
+          pos = r1;
+        }
+        return r0;
+      }
+      
+      function parse_Attributes() {
+        var r0, r1, r2, r3, r4, r5, r6, r7, r8;
+        
+        r1 = pos;
+        r2 = pos;
+        r3 = parse_Attribute();
+        if (r3 !== null) {
+          r4 = [];
+          r6 = pos;
+          r7 = parse___();
+          if (r7 !== null) {
+            r8 = parse_Attribute();
+            if (r8 !== null) {
+              r5 = [r7, r8];
+            } else {
+              r5 = null;
+              pos = r6;
+            }
+          } else {
+            r5 = null;
+            pos = r6;
+          }
+          while (r5 !== null) {
+            r4.push(r5);
+            r6 = pos;
+            r7 = parse___();
+            if (r7 !== null) {
+              r8 = parse_Attribute();
+              if (r8 !== null) {
+                r5 = [r7, r8];
+              } else {
+                r5 = null;
+                pos = r6;
+              }
+            } else {
+              r5 = null;
+              pos = r6;
+            }
+          }
+          if (r4 !== null) {
+            r0 = [r3, r4];
+          } else {
+            r0 = null;
+            pos = r2;
+          }
+        } else {
+          r0 = null;
+          pos = r2;
+        }
+        if (r0 !== null) {
+          reportedPos = r1;
+          r0 = (function(head, tail) {
+                var result = [head];
+                for (var i = 0, l = tail.length; i < l; i++) {
+                    result.push(tail[i][1]);
+                }
+        
+                return result;
+            })(r3, r4);
+        }
+        if (r0 === null) {
+          pos = r1;
+        }
+        return r0;
+      }
+      
+      function parse_Argument() {
+        var r0, r1, r2, r3, r4, r5, r6, r7, r8, r9;
+        
+        r1 = pos;
+        r2 = pos;
+        r3 = parse_Identifier();
+        if (r3 !== null) {
+          r4 = parse___();
+          if (r4 !== null) {
+            if (input.charCodeAt(pos) === 58) {
+              r5 = ":";
+              pos++;
+            } else {
+              r5 = null;
+              if (reportFailures === 0) {
+                matchFailed("\":\"");
+              }
+            }
+            if (r5 !== null) {
+              r6 = parse___();
+              if (r6 !== null) {
+                r7 = parse_StringLiteral();
+                if (r7 === null) {
+                  r7 = parse_Variable();
+                  if (r7 === null) {
+                    r7 = parse_ViewStatementNoEOL();
+                  }
+                }
                 if (r7 !== null) {
                   r8 = parse___();
                   if (r8 !== null) {
-                    r9 = parse_attributes();
-                    r9 = r9 !== null ? r9 : "";
-                    if (r9 !== null) {
-                      r10 = parse___();
-                      if (r10 !== null) {
-                        if (input.charCodeAt(pos) === 62) {
-                          r11 = ">";
-                          pos++;
-                        } else {
-                          r11 = null;
-                          if (reportFailures === 0) {
-                            matchFailed("\">\"");
-                          }
-                        }
-                        if (r11 !== null) {
-                          r12 = [];
-                          r14 = pos;
-                          r16 = pos;
-                          reportFailures++;
-                          if (input.substr(pos, 2) === "</") {
-                            r15 = "</";
-                            pos += 2;
-                          } else {
-                            r15 = null;
-                            if (reportFailures === 0) {
-                              matchFailed("\"</\"");
-                            }
-                          }
-                          reportFailures--;
-                          if (r15 === null) {
-                            r15 = "";
-                          } else {
-                            r15 = null;
-                            pos = r16;
-                          }
-                          if (r15 !== null) {
-                            r16 = parse_helper();
-                            if (r16 === null) {
-                              r16 = parse_sourceCharacter();
-                            }
-                            if (r16 !== null) {
-                              r13 = [r15, r16];
-                            } else {
-                              r13 = null;
-                              pos = r14;
-                            }
-                          } else {
-                            r13 = null;
-                            pos = r14;
-                          }
-                          while (r13 !== null) {
-                            r12.push(r13);
-                            r14 = pos;
-                            r16 = pos;
-                            reportFailures++;
-                            if (input.substr(pos, 2) === "</") {
-                              r15 = "</";
-                              pos += 2;
-                            } else {
-                              r15 = null;
-                              if (reportFailures === 0) {
-                                matchFailed("\"</\"");
-                              }
-                            }
-                            reportFailures--;
-                            if (r15 === null) {
-                              r15 = "";
-                            } else {
-                              r15 = null;
-                              pos = r16;
-                            }
-                            if (r15 !== null) {
-                              r16 = parse_helper();
-                              if (r16 === null) {
-                                r16 = parse_sourceCharacter();
-                              }
-                              if (r16 !== null) {
-                                r13 = [r15, r16];
-                              } else {
-                                r13 = null;
-                                pos = r14;
-                              }
-                            } else {
-                              r13 = null;
-                              pos = r14;
-                            }
-                          }
-                          if (r12 !== null) {
-                            if (input.substr(pos, 2) === "</") {
-                              r13 = "</";
-                              pos += 2;
-                            } else {
-                              r13 = null;
-                              if (reportFailures === 0) {
-                                matchFailed("\"</\"");
-                              }
-                            }
-                            if (r13 !== null) {
-                              r14 = parse___();
-                              if (r14 !== null) {
-                                r15 = parse_identifier();
-                                if (r15 !== null) {
-                                  r16 = parse___();
-                                  if (r16 !== null) {
-                                    if (input.charCodeAt(pos) === 62) {
-                                      r17 = ">";
-                                      pos++;
-                                    } else {
-                                      r17 = null;
-                                      if (reportFailures === 0) {
-                                        matchFailed("\">\"");
-                                      }
-                                    }
-                                    if (r17 !== null) {
-                                      r0 = [r3, r4, r5, r6, r7, r8, r9, r10, r11, r12, r13, r14, r15, r16, r17];
-                                    } else {
-                                      r0 = null;
-                                      pos = r2;
-                                    }
-                                  } else {
-                                    r0 = null;
-                                    pos = r2;
-                                  }
-                                } else {
-                                  r0 = null;
-                                  pos = r2;
-                                }
-                              } else {
-                                r0 = null;
-                                pos = r2;
-                              }
-                            } else {
-                              r0 = null;
-                              pos = r2;
-                            }
-                          } else {
-                            r0 = null;
-                            pos = r2;
-                          }
-                        } else {
-                          r0 = null;
-                          pos = r2;
-                        }
-                      } else {
-                        r0 = null;
-                        pos = r2;
+                    if (input.charCodeAt(pos) === 59) {
+                      r9 = ";";
+                      pos++;
+                    } else {
+                      r9 = null;
+                      if (reportFailures === 0) {
+                        matchFailed("\";\"");
                       }
+                    }
+                    if (r9 !== null) {
+                      r0 = [r3, r4, r5, r6, r7, r8, r9];
                     } else {
                       r0 = null;
                       pos = r2;
@@ -925,44 +2052,13 @@ Hector.Parser = (function(){
         }
         if (r0 !== null) {
           reportedPos = r1;
-          r0 = (function(id1, argument, attributes, inner, id2) {
-        
-                var children = [];
-                var content = "";
-                var a;
-        
-                for (var i = 0, l = inner.length; i < l; i++) {
-                    a = inner[i][1];
-                    if (a.type) {
-                        if (content) {
-                            children.push({
-                                type: "String",
-                                value: content
-                            });
-                        }
-        
-                        children.push(a);
-                        content = "";
-                    } else {
-                        content += a;
-                    }
-                }
-        
-                if (content) {
-                    children.push({
-                        type: "String",
-                        value: content
-                    });
-                }
-        
+          r0 = (function(id, value) {
                 return {
-                    type: "Html",
-                    identifier: id1,
-                    argument: argument,
-                    attributes: attributes || [],
-                    children: children
+                    type: "Argument",
+                    key: id,
+                    value: value
                 };
-            })(r5, r7, r9, r12, r15);
+            })(r3, r7);
         }
         if (r0 === null) {
           pos = r1;
@@ -970,30 +2066,47 @@ Hector.Parser = (function(){
         return r0;
       }
       
-      function parse_viewDeclaration() {
-        var r0, r1, r2, r3, r4, r5;
+      function parse_Arguments() {
+        var r0, r1, r2, r3, r4, r5, r6, r7, r8;
         
         r1 = pos;
         r2 = pos;
-        if (input.substr(pos, 3) === "def") {
-          r3 = "def";
-          pos += 3;
-        } else {
-          r3 = null;
-          if (reportFailures === 0) {
-            matchFailed("\"def\"");
-          }
-        }
+        r3 = parse_Argument();
         if (r3 !== null) {
-          r4 = parse___();
-          if (r4 !== null) {
-            r5 = parse_viewInstance();
-            if (r5 !== null) {
-              r0 = [r3, r4, r5];
+          r4 = [];
+          r6 = pos;
+          r7 = parse___();
+          if (r7 !== null) {
+            r8 = parse_Argument();
+            if (r8 !== null) {
+              r5 = [r7, r8];
             } else {
-              r0 = null;
-              pos = r2;
+              r5 = null;
+              pos = r6;
             }
+          } else {
+            r5 = null;
+            pos = r6;
+          }
+          while (r5 !== null) {
+            r4.push(r5);
+            r6 = pos;
+            r7 = parse___();
+            if (r7 !== null) {
+              r8 = parse_Argument();
+              if (r8 !== null) {
+                r5 = [r7, r8];
+              } else {
+                r5 = null;
+                pos = r6;
+              }
+            } else {
+              r5 = null;
+              pos = r6;
+            }
+          }
+          if (r4 !== null) {
+            r0 = [r3, r4];
           } else {
             r0 = null;
             pos = r2;
@@ -1004,10 +2117,14 @@ Hector.Parser = (function(){
         }
         if (r0 !== null) {
           reportedPos = r1;
-          r0 = (function(inst) {
-                inst.type = "ViewDeclaration";
-                return inst;
-            })(r5);
+          r0 = (function(head, tail) {
+                var result = [head];
+                for (var i = 0, l = tail.length; i < l; i++) {
+                    result.push(tail[i][1]);
+                }
+        
+                return result;
+            })(r3, r4);
         }
         if (r0 === null) {
           pos = r1;
@@ -1015,19 +2132,26 @@ Hector.Parser = (function(){
         return r0;
       }
       
-      function parse_viewInstance() {
+      function parse_Children() {
+        var r0;
+        
+        r0 = parse_SourceElements();
+        if (r0 === null) {
+          r0 = parse_Arguments();
+        }
+        return r0;
+      }
+      
+      function parse_ViewStatement() {
         var r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, r11, r12;
         
         r1 = pos;
         r2 = pos;
-        r3 = parse_variable();
-        if (r3 === null) {
-          r3 = parse_identifier();
-        }
+        r3 = parse_Identifier();
         if (r3 !== null) {
           r4 = parse___();
           if (r4 !== null) {
-            r5 = parse_attributes();
+            r5 = parse_Attributes();
             r5 = r5 !== null ? r5 : "";
             if (r5 !== null) {
               r6 = parse___();
@@ -1067,7 +2191,7 @@ Hector.Parser = (function(){
           reportedPos = r1;
           r0 = (function(id, attributes) {
                 return {
-                    type: "View",
+                    type: "ViewStatement",
                     constructorName: id,
                     value: id,
                     attributes: attributes || [],
@@ -1081,14 +2205,14 @@ Hector.Parser = (function(){
         if (r0 === null) {
           r1 = pos;
           r2 = pos;
-          r3 = parse_variable();
+          r3 = parse_Variable();
           if (r3 === null) {
-            r3 = parse_identifier();
+            r3 = parse_Identifier();
           }
           if (r3 !== null) {
             r4 = parse___();
             if (r4 !== null) {
-              r5 = parse_attributes();
+              r5 = parse_Attributes();
               r5 = r5 !== null ? r5 : "";
               if (r5 !== null) {
                 r6 = parse___();
@@ -1107,7 +2231,7 @@ Hector.Parser = (function(){
                     r10 = pos;
                     r11 = parse___();
                     if (r11 !== null) {
-                      r12 = parse_children();
+                      r12 = parse_Children();
                       if (r12 !== null) {
                         r9 = [r11, r12];
                       } else {
@@ -1123,7 +2247,7 @@ Hector.Parser = (function(){
                       r10 = pos;
                       r11 = parse___();
                       if (r11 !== null) {
-                        r12 = parse_children();
+                        r12 = parse_Children();
                         if (r12 !== null) {
                           r9 = [r11, r12];
                         } else {
@@ -1186,7 +2310,7 @@ Hector.Parser = (function(){
             r0 = (function(id, attributes, children) {
                   children = children[0];
                   return {
-                      type: "View",
+                      type: "ViewStatement",
                       constructorName: id,
                       value: id,
                       attributes: attributes || [],
@@ -1201,16 +2325,16 @@ Hector.Parser = (function(){
         return r0;
       }
       
-      function parse_viewInstanceNoEOL() {
+      function parse_ViewStatementNoEOL() {
         var r0, r1, r2, r3, r4, r5;
         
         r1 = pos;
         r2 = pos;
-        r3 = parse_identifier();
+        r3 = parse_Identifier();
         if (r3 !== null) {
           r4 = parse___();
           if (r4 !== null) {
-            r5 = parse_attributes();
+            r5 = parse_Attributes();
             r5 = r5 !== null ? r5 : "";
             if (r5 !== null) {
               r0 = [r3, r4, r5];
@@ -1230,7 +2354,7 @@ Hector.Parser = (function(){
           reportedPos = r1;
           r0 = (function(id, attributes) {
                 return {
-                    type: "View",
+                    type: "ViewStatement",
                     constructorName: id,
                     value: id,
                     attributes: attributes || [],
@@ -1244,406 +2368,16 @@ Hector.Parser = (function(){
         return r0;
       }
       
-      function parse_children() {
-        var r0;
-        
-        r0 = parse_elements();
-        if (r0 === null) {
-          r0 = parse_arguments();
-        }
-        return r0;
-      }
-      
-      function parse_arguments() {
-        var r0, r1, r2, r3, r4, r5, r6, r7, r8;
-        
-        r1 = pos;
-        r2 = pos;
-        r3 = parse_argument();
-        if (r3 !== null) {
-          r4 = [];
-          r6 = pos;
-          r7 = parse___();
-          if (r7 !== null) {
-            r8 = parse_argument();
-            if (r8 !== null) {
-              r5 = [r7, r8];
-            } else {
-              r5 = null;
-              pos = r6;
-            }
-          } else {
-            r5 = null;
-            pos = r6;
-          }
-          while (r5 !== null) {
-            r4.push(r5);
-            r6 = pos;
-            r7 = parse___();
-            if (r7 !== null) {
-              r8 = parse_argument();
-              if (r8 !== null) {
-                r5 = [r7, r8];
-              } else {
-                r5 = null;
-                pos = r6;
-              }
-            } else {
-              r5 = null;
-              pos = r6;
-            }
-          }
-          if (r4 !== null) {
-            r0 = [r3, r4];
-          } else {
-            r0 = null;
-            pos = r2;
-          }
-        } else {
-          r0 = null;
-          pos = r2;
-        }
-        if (r0 !== null) {
-          reportedPos = r1;
-          r0 = (function(head, tail) {
-                var result = [head];
-                for (var i = 0, l = tail.length; i < l; i++) {
-                    result.push(tail[i][1]);
-                }
-        
-                return result;
-            })(r3, r4);
-        }
-        if (r0 === null) {
-          pos = r1;
-        }
-        return r0;
-      }
-      
-      function parse_argument() {
-        var r0, r1, r2, r3, r4, r5, r6, r7, r8, r9;
-        
-        r1 = pos;
-        r2 = pos;
-        r3 = parse_identifier();
-        if (r3 !== null) {
-          r4 = parse___();
-          if (r4 !== null) {
-            if (input.charCodeAt(pos) === 58) {
-              r5 = ":";
-              pos++;
-            } else {
-              r5 = null;
-              if (reportFailures === 0) {
-                matchFailed("\":\"");
-              }
-            }
-            if (r5 !== null) {
-              r6 = parse___();
-              if (r6 !== null) {
-                r7 = parse_stringLiteral();
-                if (r7 === null) {
-                  r7 = parse_variable();
-                  if (r7 === null) {
-                    r7 = parse_viewInstanceNoEOL();
-                  }
-                }
-                if (r7 !== null) {
-                  r8 = parse___();
-                  if (r8 !== null) {
-                    if (input.charCodeAt(pos) === 59) {
-                      r9 = ";";
-                      pos++;
-                    } else {
-                      r9 = null;
-                      if (reportFailures === 0) {
-                        matchFailed("\";\"");
-                      }
-                    }
-                    if (r9 !== null) {
-                      r0 = [r3, r4, r5, r6, r7, r8, r9];
-                    } else {
-                      r0 = null;
-                      pos = r2;
-                    }
-                  } else {
-                    r0 = null;
-                    pos = r2;
-                  }
-                } else {
-                  r0 = null;
-                  pos = r2;
-                }
-              } else {
-                r0 = null;
-                pos = r2;
-              }
-            } else {
-              r0 = null;
-              pos = r2;
-            }
-          } else {
-            r0 = null;
-            pos = r2;
-          }
-        } else {
-          r0 = null;
-          pos = r2;
-        }
-        if (r0 !== null) {
-          reportedPos = r1;
-          r0 = (function(id, value) {
-                return {
-                    type: "Argument",
-                    key: id,
-                    value: value
-                };
-            })(r3, r7);
-        }
-        if (r0 === null) {
-          pos = r1;
-        }
-        return r0;
-      }
-      
-      function parse_attributes() {
-        var r0, r1, r2, r3, r4, r5, r6, r7, r8;
-        
-        r1 = pos;
-        r2 = pos;
-        r3 = parse_attribute();
-        if (r3 !== null) {
-          r4 = [];
-          r6 = pos;
-          r7 = parse___();
-          if (r7 !== null) {
-            r8 = parse_attribute();
-            if (r8 !== null) {
-              r5 = [r7, r8];
-            } else {
-              r5 = null;
-              pos = r6;
-            }
-          } else {
-            r5 = null;
-            pos = r6;
-          }
-          while (r5 !== null) {
-            r4.push(r5);
-            r6 = pos;
-            r7 = parse___();
-            if (r7 !== null) {
-              r8 = parse_attribute();
-              if (r8 !== null) {
-                r5 = [r7, r8];
-              } else {
-                r5 = null;
-                pos = r6;
-              }
-            } else {
-              r5 = null;
-              pos = r6;
-            }
-          }
-          if (r4 !== null) {
-            r0 = [r3, r4];
-          } else {
-            r0 = null;
-            pos = r2;
-          }
-        } else {
-          r0 = null;
-          pos = r2;
-        }
-        if (r0 !== null) {
-          reportedPos = r1;
-          r0 = (function(head, tail) {
-                var result = [head];
-                for (var i = 0, l = tail.length; i < l; i++) {
-                    result.push(tail[i][1]);
-                }
-        
-                return result;
-            })(r3, r4);
-        }
-        if (r0 === null) {
-          pos = r1;
-        }
-        return r0;
-      }
-      
-      function parse_attribute() {
-        var r0, r1, r2, r3, r4, r5, r6, r7;
-        
-        r1 = pos;
-        r2 = pos;
-        r3 = parse_property();
-        if (r3 !== null) {
-          r4 = parse___();
-          if (r4 !== null) {
-            if (input.charCodeAt(pos) === 61) {
-              r5 = "=";
-              pos++;
-            } else {
-              r5 = null;
-              if (reportFailures === 0) {
-                matchFailed("\"=\"");
-              }
-            }
-            if (r5 !== null) {
-              r6 = parse___();
-              if (r6 !== null) {
-                r7 = parse_stringLiteral();
-                if (r7 === null) {
-                  r7 = parse_variable();
-                  if (r7 === null) {
-                    r7 = parse_identifier();
-                  }
-                }
-                if (r7 !== null) {
-                  r0 = [r3, r4, r5, r6, r7];
-                } else {
-                  r0 = null;
-                  pos = r2;
-                }
-              } else {
-                r0 = null;
-                pos = r2;
-              }
-            } else {
-              r0 = null;
-              pos = r2;
-            }
-          } else {
-            r0 = null;
-            pos = r2;
-          }
-        } else {
-          r0 = null;
-          pos = r2;
-        }
-        if (r0 !== null) {
-          reportedPos = r1;
-          r0 = (function(id, value) {
-                return {
-                    type: "Attribute",
-                    key: id,
-                    value: value
-                }
-            })(r3, r7);
-        }
-        if (r0 === null) {
-          pos = r1;
-        }
-        return r0;
-      }
-      
-      function parse_property() {
-        var r0, r1, r2, r3, r4, r5, r6, r7, r8;
-        
-        reportFailures++;
-        r1 = pos;
-        r2 = pos;
-        r3 = parse_identifier();
-        if (r3 !== null) {
-          r4 = [];
-          r6 = pos;
-          if (input.charCodeAt(pos) === 46) {
-            r7 = ".";
-            pos++;
-          } else {
-            r7 = null;
-            if (reportFailures === 0) {
-              matchFailed("\".\"");
-            }
-          }
-          if (r7 !== null) {
-            r8 = parse_identifier();
-            if (r8 !== null) {
-              r5 = [r7, r8];
-            } else {
-              r5 = null;
-              pos = r6;
-            }
-          } else {
-            r5 = null;
-            pos = r6;
-          }
-          while (r5 !== null) {
-            r4.push(r5);
-            r6 = pos;
-            if (input.charCodeAt(pos) === 46) {
-              r7 = ".";
-              pos++;
-            } else {
-              r7 = null;
-              if (reportFailures === 0) {
-                matchFailed("\".\"");
-              }
-            }
-            if (r7 !== null) {
-              r8 = parse_identifier();
-              if (r8 !== null) {
-                r5 = [r7, r8];
-              } else {
-                r5 = null;
-                pos = r6;
-              }
-            } else {
-              r5 = null;
-              pos = r6;
-            }
-          }
-          if (r4 !== null) {
-            r0 = [r3, r4];
-          } else {
-            r0 = null;
-            pos = r2;
-          }
-        } else {
-          r0 = null;
-          pos = r2;
-        }
-        if (r0 !== null) {
-          reportedPos = r1;
-          r0 = (function(head, tail) {
-                var result = [head];
-                for (var i = 0, l = tail.length; i < l; i++) {
-                    result.push(tail[i][1]);
-                }
-        
-                return result.join(".");
-            })(r3, r4);
-        }
-        if (r0 === null) {
-          pos = r1;
-        }
-        reportFailures--;
-        if (reportFailures === 0 && r0 === null) {
-          matchFailed("property");
-        }
-        return r0;
-      }
-      
-      function parse_variableStatement() {
+      function parse_ViewDeclaration() {
         var r0, r1, r2, r3, r4, r5;
         
-        reportFailures++;
         r1 = pos;
         r2 = pos;
-        r3 = parse_variable();
+        r3 = parse_DEF();
         if (r3 !== null) {
           r4 = parse___();
           if (r4 !== null) {
-            if (input.charCodeAt(pos) === 59) {
-              r5 = ";";
-              pos++;
-            } else {
-              r5 = null;
-              if (reportFailures === 0) {
-                matchFailed("\";\"");
-              }
-            }
+            r5 = parse_ViewStatement();
             if (r5 !== null) {
               r0 = [r3, r4, r5];
             } else {
@@ -1660,680 +2394,97 @@ Hector.Parser = (function(){
         }
         if (r0 !== null) {
           reportedPos = r1;
-          r0 = (function(variable) {
-                variable.type = "VariableStatement";
-                return variable;
-            })(r3);
-        }
-        if (r0 === null) {
-          pos = r1;
-        }
-        reportFailures--;
-        if (reportFailures === 0 && r0 === null) {
-          matchFailed("variableStatement");
-        }
-        return r0;
-      }
-      
-      function parse_variable() {
-        var r0, r1, r2, r3, r4, r5, r6, r7, r8;
-        
-        reportFailures++;
-        r1 = pos;
-        r2 = pos;
-        if (input.charCodeAt(pos) === 36) {
-          r3 = "$";
-          pos++;
-        } else {
-          r3 = null;
-          if (reportFailures === 0) {
-            matchFailed("\"$\"");
-          }
-        }
-        if (r3 !== null) {
-          r4 = parse_identifierStart();
-          if (r4 !== null) {
-            r5 = [];
-            r6 = parse_identifierPart();
-            while (r6 !== null) {
-              r5.push(r6);
-              r6 = parse_identifierPart();
-            }
-            if (r5 !== null) {
-              if (input.charCodeAt(pos) === 63) {
-                r6 = "?";
-                pos++;
-              } else {
-                r6 = null;
-                if (reportFailures === 0) {
-                  matchFailed("\"?\"");
+          r0 = (function(declaration) {
+                declaration.type = "ViewDeclaration";
+                var attributes = declaration.attributes;
+                for (var i = 0, l = attributes.length; i < l; i++) {
+                    attributes[i].type = "AttributeDeclaration";
                 }
-              }
-              r6 = r6 !== null ? r6 : "";
-              if (r6 !== null) {
-                r7 = parse___();
-                if (r7 !== null) {
-                  r8 = parse_attributes();
-                  r8 = r8 !== null ? r8 : "";
-                  if (r8 !== null) {
-                    r0 = [r3, r4, r5, r6, r7, r8];
-                  } else {
-                    r0 = null;
-                    pos = r2;
-                  }
-                } else {
-                  r0 = null;
-                  pos = r2;
-                }
-              } else {
-                r0 = null;
-                pos = r2;
-              }
-            } else {
-              r0 = null;
-              pos = r2;
-            }
-          } else {
-            r0 = null;
-            pos = r2;
-          }
-        } else {
-          r0 = null;
-          pos = r2;
-        }
-        if (r0 !== null) {
-          reportedPos = r1;
-          r0 = (function(start, parts, conditional, attributes) {
-                return {
-                    type: "Variable",
-                    value: start + parts.join(""),
-                    isConditional: !!conditional,
-                    attributes: attributes || []
-                };
-            })(r4, r5, r6, r8);
-        }
-        if (r0 === null) {
-          pos = r1;
-        }
-        reportFailures--;
-        if (reportFailures === 0 && r0 === null) {
-          matchFailed("variable");
-        }
-        return r0;
-      }
-      
-      function parse_identifier() {
-        var r0, r1, r2, r3, r4, r5;
         
-        reportFailures++;
-        r1 = pos;
-        r2 = pos;
-        r3 = parse_identifierStart();
-        if (r3 !== null) {
-          r4 = [];
-          r5 = parse_identifierPart();
-          while (r5 !== null) {
-            r4.push(r5);
-            r5 = parse_identifierPart();
-          }
-          if (r4 !== null) {
-            r0 = [r3, r4];
-          } else {
-            r0 = null;
-            pos = r2;
-          }
-        } else {
-          r0 = null;
-          pos = r2;
-        }
-        if (r0 !== null) {
-          reportedPos = r1;
-          r0 = (function(start, parts) {
-                return start + parts.join("");
-            })(r3, r4);
+                return declaration;
+            })(r5);
         }
         if (r0 === null) {
           pos = r1;
         }
-        reportFailures--;
-        if (reportFailures === 0 && r0 === null) {
-          matchFailed("identifier");
-        }
         return r0;
       }
       
-      function parse_identifierStart() {
+      function parse_SourceElement() {
         var r0;
         
-        if (/^[a-zA-Z_]/.test(input.charAt(pos))) {
-          r0 = input.charAt(pos);
-          pos++;
-        } else {
-          r0 = null;
-          if (reportFailures === 0) {
-            matchFailed("[a-zA-Z_]");
-          }
-        }
-        return r0;
-      }
-      
-      function parse_identifierPart() {
-        var r0;
-        
-        r0 = parse_identifierStart();
+        r0 = parse_ViewDeclaration();
         if (r0 === null) {
-          if (/^[0-9]/.test(input.charAt(pos))) {
-            r0 = input.charAt(pos);
-            pos++;
-          } else {
-            r0 = null;
-            if (reportFailures === 0) {
-              matchFailed("[0-9]");
-            }
-          }
-        }
-        return r0;
-      }
-      
-      function parse_stringLiteral() {
-        var r0, r1, r2, r3, r4, r5;
-        
-        reportFailures++;
-        r1 = pos;
-        r2 = pos;
-        if (input.charCodeAt(pos) === 34) {
-          r3 = "\"";
-          pos++;
-        } else {
-          r3 = null;
-          if (reportFailures === 0) {
-            matchFailed("\"\\\"\"");
-          }
-        }
-        if (r3 !== null) {
-          r4 = parse_doubleStringCharacters();
-          r4 = r4 !== null ? r4 : "";
-          if (r4 !== null) {
-            if (input.charCodeAt(pos) === 34) {
-              r5 = "\"";
-              pos++;
-            } else {
-              r5 = null;
-              if (reportFailures === 0) {
-                matchFailed("\"\\\"\"");
-              }
-            }
-            if (r5 !== null) {
-              r0 = [r3, r4, r5];
-            } else {
-              r0 = null;
-              pos = r2;
-            }
-          } else {
-            r0 = null;
-            pos = r2;
-          }
-        } else {
-          r0 = null;
-          pos = r2;
-        }
-        if (r0 === null) {
-          r2 = pos;
-          if (input.charCodeAt(pos) === 39) {
-            r3 = "'";
-            pos++;
-          } else {
-            r3 = null;
-            if (reportFailures === 0) {
-              matchFailed("\"'\"");
-            }
-          }
-          if (r3 !== null) {
-            r4 = parse_singleStringCharacters();
-            r4 = r4 !== null ? r4 : "";
-            if (r4 !== null) {
-              if (input.charCodeAt(pos) === 39) {
-                r5 = "'";
-                pos++;
-              } else {
-                r5 = null;
-                if (reportFailures === 0) {
-                  matchFailed("\"'\"");
-                }
-              }
-              if (r5 !== null) {
-                r0 = [r3, r4, r5];
-              } else {
-                r0 = null;
-                pos = r2;
-              }
-            } else {
-              r0 = null;
-              pos = r2;
-            }
-          } else {
-            r0 = null;
-            pos = r2;
-          }
-        }
-        if (r0 !== null) {
-          reportedPos = r1;
-          r0 = (function(parts) {
-              return "\""+parts[1]+"\"";
-            })(r0);
-        }
-        if (r0 === null) {
-          pos = r1;
-        }
-        reportFailures--;
-        if (reportFailures === 0 && r0 === null) {
-          matchFailed("string");
-        }
-        return r0;
-      }
-      
-      function parse_doubleStringCharacters() {
-        var r0, r1, r2;
-        
-        r1 = pos;
-        r2 = parse_doubleStringCharacter();
-        if (r2 !== null) {
-          r0 = [];
-          while (r2 !== null) {
-            r0.push(r2);
-            r2 = parse_doubleStringCharacter();
-          }
-        } else {
-          r0 = null;
-        }
-        if (r0 !== null) {
-          reportedPos = r1;
-          r0 = (function(chars) { return chars.join(""); })(r0);
-        }
-        if (r0 === null) {
-          pos = r1;
-        }
-        return r0;
-      }
-      
-      function parse_singleStringCharacters() {
-        var r0, r1, r2;
-        
-        r1 = pos;
-        r2 = parse_singleStringCharacter();
-        if (r2 !== null) {
-          r0 = [];
-          while (r2 !== null) {
-            r0.push(r2);
-            r2 = parse_singleStringCharacter();
-          }
-        } else {
-          r0 = null;
-        }
-        if (r0 !== null) {
-          reportedPos = r1;
-          r0 = (function(chars) { return chars.join(""); })(r0);
-        }
-        if (r0 === null) {
-          pos = r1;
-        }
-        return r0;
-      }
-      
-      function parse_doubleStringCharacter() {
-        var r0, r1, r2, r3, r4;
-        
-        r1 = pos;
-        r2 = pos;
-        r4 = pos;
-        reportFailures++;
-        if (input.charCodeAt(pos) === 34) {
-          r3 = "\"";
-          pos++;
-        } else {
-          r3 = null;
-          if (reportFailures === 0) {
-            matchFailed("\"\\\"\"");
-          }
-        }
-        if (r3 === null) {
-          if (input.charCodeAt(pos) === 92) {
-            r3 = "\\";
-            pos++;
-          } else {
-            r3 = null;
-            if (reportFailures === 0) {
-              matchFailed("\"\\\\\"");
-            }
-          }
-          if (r3 === null) {
-            r3 = parse_EOL();
-          }
-        }
-        reportFailures--;
-        if (r3 === null) {
-          r3 = "";
-        } else {
-          r3 = null;
-          pos = r4;
-        }
-        if (r3 !== null) {
-          r4 = parse_sourceCharacter();
-          if (r4 !== null) {
-            r0 = [r3, r4];
-          } else {
-            r0 = null;
-            pos = r2;
-          }
-        } else {
-          r0 = null;
-          pos = r2;
-        }
-        if (r0 !== null) {
-          reportedPos = r1;
-          r0 = (function(char_) { return char_;    })(r4);
-        }
-        if (r0 === null) {
-          pos = r1;
-        }
-        if (r0 === null) {
-          r1 = pos;
-          r2 = pos;
-          if (input.charCodeAt(pos) === 92) {
-            r3 = "\\";
-            pos++;
-          } else {
-            r3 = null;
-            if (reportFailures === 0) {
-              matchFailed("\"\\\\\"");
-            }
-          }
-          if (r3 !== null) {
-            r4 = parse_characterescapeSequence();
-            if (r4 !== null) {
-              r0 = [r3, r4];
-            } else {
-              r0 = null;
-              pos = r2;
-            }
-          } else {
-            r0 = null;
-            pos = r2;
-          }
-          if (r0 !== null) {
-            reportedPos = r1;
-            r0 = (function(sequence) { return sequence; })(r4);
-          }
+          r0 = parse_ViewStatement();
           if (r0 === null) {
-            pos = r1;
-          }
-          if (r0 === null) {
-            r0 = parse_lineContinuation();
-          }
-        }
-        return r0;
-      }
-      
-      function parse_singleStringCharacter() {
-        var r0, r1, r2, r3, r4;
-        
-        r1 = pos;
-        r2 = pos;
-        r4 = pos;
-        reportFailures++;
-        if (input.charCodeAt(pos) === 39) {
-          r3 = "'";
-          pos++;
-        } else {
-          r3 = null;
-          if (reportFailures === 0) {
-            matchFailed("\"'\"");
-          }
-        }
-        if (r3 === null) {
-          if (input.charCodeAt(pos) === 92) {
-            r3 = "\\";
-            pos++;
-          } else {
-            r3 = null;
-            if (reportFailures === 0) {
-              matchFailed("\"\\\\\"");
-            }
-          }
-          if (r3 === null) {
-            r3 = parse_EOL();
-          }
-        }
-        reportFailures--;
-        if (r3 === null) {
-          r3 = "";
-        } else {
-          r3 = null;
-          pos = r4;
-        }
-        if (r3 !== null) {
-          r4 = parse_sourceCharacter();
-          if (r4 !== null) {
-            r0 = [r3, r4];
-          } else {
-            r0 = null;
-            pos = r2;
-          }
-        } else {
-          r0 = null;
-          pos = r2;
-        }
-        if (r0 !== null) {
-          reportedPos = r1;
-          r0 = (function(char_) { return char_;    })(r4);
-        }
-        if (r0 === null) {
-          pos = r1;
-        }
-        if (r0 === null) {
-          r1 = pos;
-          r2 = pos;
-          if (input.charCodeAt(pos) === 92) {
-            r3 = "\\";
-            pos++;
-          } else {
-            r3 = null;
-            if (reportFailures === 0) {
-              matchFailed("\"\\\\\"");
-            }
-          }
-          if (r3 !== null) {
-            r4 = parse_characterescapeSequence();
-            if (r4 !== null) {
-              r0 = [r3, r4];
-            } else {
-              r0 = null;
-              pos = r2;
-            }
-          } else {
-            r0 = null;
-            pos = r2;
-          }
-          if (r0 !== null) {
-            reportedPos = r1;
-            r0 = (function(sequence) { return sequence; })(r4);
-          }
-          if (r0 === null) {
-            pos = r1;
-          }
-          if (r0 === null) {
-            r0 = parse_lineContinuation();
-          }
-        }
-        return r0;
-      }
-      
-      function parse_lineContinuation() {
-        var r0, r1, r2, r3, r4;
-        
-        r1 = pos;
-        r2 = pos;
-        if (input.charCodeAt(pos) === 92) {
-          r3 = "\\";
-          pos++;
-        } else {
-          r3 = null;
-          if (reportFailures === 0) {
-            matchFailed("\"\\\\\"");
-          }
-        }
-        if (r3 !== null) {
-          r4 = parse_EOL();
-          if (r4 !== null) {
-            r0 = [r3, r4];
-          } else {
-            r0 = null;
-            pos = r2;
-          }
-        } else {
-          r0 = null;
-          pos = r2;
-        }
-        if (r0 !== null) {
-          reportedPos = r1;
-          r0 = (function(sequence) { return sequence; })(r4);
-        }
-        if (r0 === null) {
-          pos = r1;
-        }
-        return r0;
-      }
-      
-      function parse_characterescapeSequence() {
-        var r0;
-        
-        r0 = parse_singleescapeCharacter();
-        if (r0 === null) {
-          r0 = parse_nonescapeCharacter();
-        }
-        return r0;
-      }
-      
-      function parse_singleescapeCharacter() {
-        var r0, r1;
-        
-        r1 = pos;
-        if (/^['"\\bfnrtv]/.test(input.charAt(pos))) {
-          r0 = input.charAt(pos);
-          pos++;
-        } else {
-          r0 = null;
-          if (reportFailures === 0) {
-            matchFailed("['\"\\\\bfnrtv]");
-          }
-        }
-        if (r0 !== null) {
-          reportedPos = r1;
-          r0 = (function(char_) {
-              return char_
-                .replace("b", "\b")
-                .replace("f", "\f")
-                .replace("n", "\n")
-                .replace("r", "\r")
-                .replace("t", "\t")
-                .replace("v", "\x0B") // IE does not recognize "\v".
-            })(r0);
-        }
-        if (r0 === null) {
-          pos = r1;
-        }
-        return r0;
-      }
-      
-      function parse_nonescapeCharacter() {
-        var r0, r1, r2, r3, r4;
-        
-        r1 = pos;
-        r2 = pos;
-        r4 = pos;
-        reportFailures++;
-        r3 = parse_escapeCharacter();
-        reportFailures--;
-        if (r3 === null) {
-          r3 = "";
-        } else {
-          r3 = null;
-          pos = r4;
-        }
-        if (r3 === null) {
-          r3 = parse_EOL();
-        }
-        if (r3 !== null) {
-          r4 = parse_sourceCharacter();
-          if (r4 !== null) {
-            r0 = [r3, r4];
-          } else {
-            r0 = null;
-            pos = r2;
-          }
-        } else {
-          r0 = null;
-          pos = r2;
-        }
-        if (r0 !== null) {
-          reportedPos = r1;
-          r0 = (function(char_) { return char_; })(r4);
-        }
-        if (r0 === null) {
-          pos = r1;
-        }
-        return r0;
-      }
-      
-      function parse_escapeCharacter() {
-        var r0;
-        
-        r0 = parse_singleescapeCharacter();
-        if (r0 === null) {
-          r0 = parse_decimalDigit();
-          if (r0 === null) {
-            if (input.charCodeAt(pos) === 120) {
-              r0 = "x";
-              pos++;
-            } else {
-              r0 = null;
-              if (reportFailures === 0) {
-                matchFailed("\"x\"");
-              }
-            }
+            r0 = parse_VariableStatement();
             if (r0 === null) {
-              if (input.charCodeAt(pos) === 117) {
-                r0 = "u";
-                pos++;
-              } else {
-                r0 = null;
-                if (reportFailures === 0) {
-                  matchFailed("\"u\"");
-                }
-              }
+              r0 = parse_StringLiteral();
             }
           }
         }
         return r0;
       }
       
-      function parse_decimalDigits() {
-        var r0, r1, r2;
+      function parse_SourceElements() {
+        var r0, r1, r2, r3, r4, r5, r6, r7, r8;
         
         r1 = pos;
-        r2 = parse_decimalDigit();
-        if (r2 !== null) {
-          r0 = [];
-          while (r2 !== null) {
-            r0.push(r2);
-            r2 = parse_decimalDigit();
+        r2 = pos;
+        r3 = parse_SourceElement();
+        if (r3 !== null) {
+          r4 = [];
+          r6 = pos;
+          r7 = parse___();
+          if (r7 !== null) {
+            r8 = parse_SourceElement();
+            if (r8 !== null) {
+              r5 = [r7, r8];
+            } else {
+              r5 = null;
+              pos = r6;
+            }
+          } else {
+            r5 = null;
+            pos = r6;
+          }
+          while (r5 !== null) {
+            r4.push(r5);
+            r6 = pos;
+            r7 = parse___();
+            if (r7 !== null) {
+              r8 = parse_SourceElement();
+              if (r8 !== null) {
+                r5 = [r7, r8];
+              } else {
+                r5 = null;
+                pos = r6;
+              }
+            } else {
+              r5 = null;
+              pos = r6;
+            }
+          }
+          if (r4 !== null) {
+            r0 = [r3, r4];
+          } else {
+            r0 = null;
+            pos = r2;
           }
         } else {
           r0 = null;
+          pos = r2;
         }
         if (r0 !== null) {
           reportedPos = r1;
-          r0 = (function(digits) { return digits.join(""); })(r0);
+          r0 = (function(head, tail) {
+                var result = [head];
+                for (var i = 0, l = tail.length; i < l; i++) {
+                    result.push(tail[i][1]);
+                }
+        
+                return result;
+            })(r3, r4);
         }
         if (r0 === null) {
           pos = r1;
@@ -2341,456 +2492,22 @@ Hector.Parser = (function(){
         return r0;
       }
       
-      function parse_decimalDigit() {
-        var r0;
+      function parse_Template() {
+        var r0, r1;
         
-        if (/^[0-9]/.test(input.charAt(pos))) {
-          r0 = input.charAt(pos);
-          pos++;
-        } else {
-          r0 = null;
-          if (reportFailures === 0) {
-            matchFailed("[0-9]");
-          }
+        r1 = pos;
+        r0 = parse_SourceElements();
+        r0 = r0 !== null ? r0 : "";
+        if (r0 !== null) {
+          reportedPos = r1;
+          r0 = (function(nodes) {
+                return {
+                    nodes: nodes
+                };
+            })(r0);
         }
-        return r0;
-      }
-      
-      function parse_whiteSpace() {
-        var r0;
-        
-        reportFailures++;
-        if (/^[ \t\x0B\f]/.test(input.charAt(pos))) {
-          r0 = input.charAt(pos);
-          pos++;
-        } else {
-          r0 = null;
-          if (reportFailures === 0) {
-            matchFailed("[ \\t\\x0B\\f]");
-          }
-        }
-        reportFailures--;
-        if (reportFailures === 0 && r0 === null) {
-          matchFailed("whitespace");
-        }
-        return r0;
-      }
-      
-      function parse_EOL() {
-        var r0;
-        
-        reportFailures++;
-        if (/^[\n\r]/.test(input.charAt(pos))) {
-          r0 = input.charAt(pos);
-          pos++;
-        } else {
-          r0 = null;
-          if (reportFailures === 0) {
-            matchFailed("[\\n\\r]");
-          }
-        }
-        reportFailures--;
-        if (reportFailures === 0 && r0 === null) {
-          matchFailed("end of line");
-        }
-        return r0;
-      }
-      
-      function parse_comment() {
-        var r0;
-        
-        reportFailures++;
-        r0 = parse_multiLineComment();
         if (r0 === null) {
-          r0 = parse_singleLineComment();
-        }
-        reportFailures--;
-        if (reportFailures === 0 && r0 === null) {
-          matchFailed("comment");
-        }
-        return r0;
-      }
-      
-      function parse_multiLineComment() {
-        var r0, r1, r2, r3, r4, r5, r6, r7;
-        
-        r1 = pos;
-        if (input.substr(pos, 2) === "/*") {
-          r2 = "/*";
-          pos += 2;
-        } else {
-          r2 = null;
-          if (reportFailures === 0) {
-            matchFailed("\"/*\"");
-          }
-        }
-        if (r2 !== null) {
-          r3 = [];
-          r5 = pos;
-          r7 = pos;
-          reportFailures++;
-          if (input.substr(pos, 2) === "*/") {
-            r6 = "*/";
-            pos += 2;
-          } else {
-            r6 = null;
-            if (reportFailures === 0) {
-              matchFailed("\"*/\"");
-            }
-          }
-          reportFailures--;
-          if (r6 === null) {
-            r6 = "";
-          } else {
-            r6 = null;
-            pos = r7;
-          }
-          if (r6 !== null) {
-            r7 = parse_sourceCharacter();
-            if (r7 !== null) {
-              r4 = [r6, r7];
-            } else {
-              r4 = null;
-              pos = r5;
-            }
-          } else {
-            r4 = null;
-            pos = r5;
-          }
-          while (r4 !== null) {
-            r3.push(r4);
-            r5 = pos;
-            r7 = pos;
-            reportFailures++;
-            if (input.substr(pos, 2) === "*/") {
-              r6 = "*/";
-              pos += 2;
-            } else {
-              r6 = null;
-              if (reportFailures === 0) {
-                matchFailed("\"*/\"");
-              }
-            }
-            reportFailures--;
-            if (r6 === null) {
-              r6 = "";
-            } else {
-              r6 = null;
-              pos = r7;
-            }
-            if (r6 !== null) {
-              r7 = parse_sourceCharacter();
-              if (r7 !== null) {
-                r4 = [r6, r7];
-              } else {
-                r4 = null;
-                pos = r5;
-              }
-            } else {
-              r4 = null;
-              pos = r5;
-            }
-          }
-          if (r3 !== null) {
-            if (input.substr(pos, 2) === "*/") {
-              r4 = "*/";
-              pos += 2;
-            } else {
-              r4 = null;
-              if (reportFailures === 0) {
-                matchFailed("\"*/\"");
-              }
-            }
-            if (r4 !== null) {
-              r0 = [r2, r3, r4];
-            } else {
-              r0 = null;
-              pos = r1;
-            }
-          } else {
-            r0 = null;
-            pos = r1;
-          }
-        } else {
-          r0 = null;
           pos = r1;
-        }
-        return r0;
-      }
-      
-      function parse_multiLineCommentNoEOL() {
-        var r0, r1, r2, r3, r4, r5, r6, r7;
-        
-        r1 = pos;
-        if (input.substr(pos, 2) === "/*") {
-          r2 = "/*";
-          pos += 2;
-        } else {
-          r2 = null;
-          if (reportFailures === 0) {
-            matchFailed("\"/*\"");
-          }
-        }
-        if (r2 !== null) {
-          r3 = [];
-          r5 = pos;
-          r7 = pos;
-          reportFailures++;
-          if (input.substr(pos, 2) === "*/") {
-            r6 = "*/";
-            pos += 2;
-          } else {
-            r6 = null;
-            if (reportFailures === 0) {
-              matchFailed("\"*/\"");
-            }
-          }
-          if (r6 === null) {
-            r6 = parse_EOL();
-          }
-          reportFailures--;
-          if (r6 === null) {
-            r6 = "";
-          } else {
-            r6 = null;
-            pos = r7;
-          }
-          if (r6 !== null) {
-            r7 = parse_sourceCharacter();
-            if (r7 !== null) {
-              r4 = [r6, r7];
-            } else {
-              r4 = null;
-              pos = r5;
-            }
-          } else {
-            r4 = null;
-            pos = r5;
-          }
-          while (r4 !== null) {
-            r3.push(r4);
-            r5 = pos;
-            r7 = pos;
-            reportFailures++;
-            if (input.substr(pos, 2) === "*/") {
-              r6 = "*/";
-              pos += 2;
-            } else {
-              r6 = null;
-              if (reportFailures === 0) {
-                matchFailed("\"*/\"");
-              }
-            }
-            if (r6 === null) {
-              r6 = parse_EOL();
-            }
-            reportFailures--;
-            if (r6 === null) {
-              r6 = "";
-            } else {
-              r6 = null;
-              pos = r7;
-            }
-            if (r6 !== null) {
-              r7 = parse_sourceCharacter();
-              if (r7 !== null) {
-                r4 = [r6, r7];
-              } else {
-                r4 = null;
-                pos = r5;
-              }
-            } else {
-              r4 = null;
-              pos = r5;
-            }
-          }
-          if (r3 !== null) {
-            if (input.substr(pos, 2) === "*/") {
-              r4 = "*/";
-              pos += 2;
-            } else {
-              r4 = null;
-              if (reportFailures === 0) {
-                matchFailed("\"*/\"");
-              }
-            }
-            if (r4 !== null) {
-              r0 = [r2, r3, r4];
-            } else {
-              r0 = null;
-              pos = r1;
-            }
-          } else {
-            r0 = null;
-            pos = r1;
-          }
-        } else {
-          r0 = null;
-          pos = r1;
-        }
-        return r0;
-      }
-      
-      function parse_singleLineComment() {
-        var r0, r1, r2, r3, r4, r5, r6, r7;
-        
-        r1 = pos;
-        if (input.substr(pos, 2) === "//") {
-          r2 = "//";
-          pos += 2;
-        } else {
-          r2 = null;
-          if (reportFailures === 0) {
-            matchFailed("\"//\"");
-          }
-        }
-        if (r2 !== null) {
-          r3 = [];
-          r5 = pos;
-          r7 = pos;
-          reportFailures++;
-          r6 = parse_EOL();
-          reportFailures--;
-          if (r6 === null) {
-            r6 = "";
-          } else {
-            r6 = null;
-            pos = r7;
-          }
-          if (r6 !== null) {
-            r7 = parse_sourceCharacter();
-            if (r7 !== null) {
-              r4 = [r6, r7];
-            } else {
-              r4 = null;
-              pos = r5;
-            }
-          } else {
-            r4 = null;
-            pos = r5;
-          }
-          while (r4 !== null) {
-            r3.push(r4);
-            r5 = pos;
-            r7 = pos;
-            reportFailures++;
-            r6 = parse_EOL();
-            reportFailures--;
-            if (r6 === null) {
-              r6 = "";
-            } else {
-              r6 = null;
-              pos = r7;
-            }
-            if (r6 !== null) {
-              r7 = parse_sourceCharacter();
-              if (r7 !== null) {
-                r4 = [r6, r7];
-              } else {
-                r4 = null;
-                pos = r5;
-              }
-            } else {
-              r4 = null;
-              pos = r5;
-            }
-          }
-          if (r3 !== null) {
-            r0 = [r2, r3];
-          } else {
-            r0 = null;
-            pos = r1;
-          }
-        } else {
-          r0 = null;
-          pos = r1;
-        }
-        return r0;
-      }
-      
-      function parse_EOF() {
-        var r0, r1;
-        
-        r1 = pos;
-        reportFailures++;
-        if (input.length > pos) {
-          r0 = input.charAt(pos);
-          pos++;
-        } else {
-          r0 = null;
-          if (reportFailures === 0) {
-            matchFailed("any character");
-          }
-        }
-        reportFailures--;
-        if (r0 === null) {
-          r0 = "";
-        } else {
-          r0 = null;
-          pos = r1;
-        }
-        return r0;
-      }
-      
-      function parse__() {
-        var r0, r1;
-        
-        r0 = [];
-        r1 = parse_whiteSpace();
-        if (r1 === null) {
-          r1 = parse_multiLineCommentNoEOL();
-          if (r1 === null) {
-            r1 = parse_singleLineComment();
-          }
-        }
-        while (r1 !== null) {
-          r0.push(r1);
-          r1 = parse_whiteSpace();
-          if (r1 === null) {
-            r1 = parse_multiLineCommentNoEOL();
-            if (r1 === null) {
-              r1 = parse_singleLineComment();
-            }
-          }
-        }
-        return r0;
-      }
-      
-      function parse___() {
-        var r0, r1;
-        
-        r0 = [];
-        r1 = parse_whiteSpace();
-        if (r1 === null) {
-          r1 = parse_EOL();
-          if (r1 === null) {
-            r1 = parse_comment();
-          }
-        }
-        while (r1 !== null) {
-          r0.push(r1);
-          r1 = parse_whiteSpace();
-          if (r1 === null) {
-            r1 = parse_EOL();
-            if (r1 === null) {
-              r1 = parse_comment();
-            }
-          }
-        }
-        return r0;
-      }
-      
-      function parse_sourceCharacter() {
-        var r0;
-        
-        if (input.length > pos) {
-          r0 = input.charAt(pos);
-          pos++;
-        } else {
-          r0 = null;
-          if (reportFailures === 0) {
-            matchFailed("any character");
-          }
         }
         return r0;
       }
@@ -2896,6 +2613,33 @@ Hector.Parser = (function(){
 
 Hector.Builders = (function (window, document) {
 
+    var nativeForEach = Array.prototype.forEach;
+
+    Hector.forEach = function (obj, iterator, context) {
+        if (obj == null) return;
+        if (nativeForEach && obj.forEach === nativeForEach) {
+            obj.forEach(iterator, context);
+        } else if (obj.length === +obj.length) {
+            for (var i = 0, l = obj.length; i < l; i++) {
+                if (iterator.call(context, obj[i], i, obj) === breaker) return;
+            }
+        } else {
+            for (var key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    if (iterator.call(context, obj[key], key, obj) === breaker) return;
+                }
+            }
+        }
+    };
+
+    (Hector.symbols = []).add = function (symbol) {
+        if (this.indexOf(symbol) === -1) {
+            this.push(symbol);
+        }
+    };
+
+    Hector.comma = ",\n   ";
+
     var Builders = {};
 
     // Namespace for all the target language string templates
@@ -2910,18 +2654,6 @@ Hector.Builders = (function (window, document) {
     // =========================
     // == AST Parsing Helpers ==
     // =========================
-
-    var variableCounter = {
-        count: -1,
-        excludes: [],
-        reset: function () {
-            variableCounter.count = -1;
-            variableCounter.excludes.length = 0;
-        },
-        exclude: function () {
-            this.excludes.push.apply(this.excludes, arguments);
-        }
-    };
 
     var variableNames = "abcdefghijklmnopqrstuvwxyz".split("");
     var variableNameCount = variableNames.length;
@@ -2942,40 +2674,32 @@ Hector.Builders = (function (window, document) {
 
         i = Math.floor(i);
 
-        variableName += variableNames[i] + "_";
+        variableName += variableNames[i];
 
         return variableName;
     }
 
-    function createUniqueIdentifier() {
-        variableCounter.count++;
-        var varName = createUniqueName(variableCounter.count);
+    var IdentifierBuilder = {
+        count: -1,
+        stack: [],
+        save: function () {
+            this.stack.push(IdentifierBuilder.count);
+            IdentifierBuilder.count = -1;
+        },
+        restore: function () {
+            IdentifierBuilder.count = this.stack.pop();
+        },
+        create: function () {
+            IdentifierBuilder.count++;
+            var varName = createUniqueName(IdentifierBuilder.count);
 
-        if (variableCounter.excludes.indexOf(varName) !== -1) {
-            return createUniqueIdentifier();
-        } else {
-            return varName;
-        }
-    }
-
-    function expandAttributes(attributes, contextName) {
-        var out = "";
-        var attribute;
-
-        for (var i = 0, l = attributes.length; i < l; i++) {
-            attribute = attributes[i];
-            if (attribute.type !== "Attribute") throw Error("Invalid attribute type: " + attribute.type);
-
-            var value = attribute.value;
-            if (value && value.type) {
-                value = parseTreeNode(value);
+            if (Hector.symbols.indexOf(varName) !== -1) {
+                return this.create();
+            } else {
+                return varName;
             }
-
-            out += contextName + "." + attribute.key + " = " + value + ";\n";
         }
-
-        return out;
-    }
+    };
 
     var templateCache = {};
     
@@ -2993,15 +2717,22 @@ Hector.Builders = (function (window, document) {
             }
         }
 
+        // Workaround for lack of lookbehinds. Need to escape existing quotes
+        str = str.replace(/(\\)?\\\"/g, function ($0, $1) {
+            return $1 ? $0 : "\\\\\\\"";
+        }).replace(/(\\)?\"/g, function ($0, $1) {
+            return $1 ? $0 : "\\\"";
+        });
+
         str = "var p=[],print=function(){p.push.apply(p,arguments);};"
             + "p.push(\""
             + str.replace(/[\r\t\n]/g, "\\n")
-                 .split("<%").join("\t")
-                 .replace(/((^|%>)[^\t]*)'/g, "$1\r")
+            .split("<%").join("\t")
+            .replace(/((^|%>)[^\t]*)'/g, "$1\r")
                  .replace(/\t=(.*?)%>/g, "\",$1,\"")
                  .split("\t").join("\");")
                  .split("%>").join("p.push(\"")
-                 .split("\r").join("'")
+                 .split("\r").join("\\'")
                  .replace(/\$/gm, "")
             + "\");return p.join(\"\");";
 
@@ -3028,12 +2759,8 @@ Hector.Builders = (function (window, document) {
         return element.value;
     };
 
-    Builders.String = function (element, contextName) {
-        throw Error("String is not implemented yet");
-    };
-
-    Builders.Attribute = function (element, contextName) {
-        throw Error("Attribute is not implemented yet");
+    Builders.StringLiteral = function (element, contextName) {
+        return element.value;
     };
 
     Builders.Variable = function (element, contextName) {
@@ -3042,7 +2769,11 @@ Hector.Builders = (function (window, document) {
     };
 
     Builders.VariableStatement = function (element, contextName) {
-        element.evaluation = renderTemplate("Echo", { contextName: contextName, value: element.value });
+        element.evaluation = renderTemplate("Echo", {
+            contextName: contextName,
+            value: element.value
+        });
+
         return renderTemplate("Variable", element);
     };
 
@@ -3052,9 +2783,9 @@ Hector.Builders = (function (window, document) {
 
         switch (value.type) {
             case "Variable":
-                value = Builders.Variable(value).toString();
+                value = Builders.Variable(value);
                 break;
-            case "View":
+            case "ViewStatement":
                 value = value.value;
                 break;
             default:
@@ -3066,35 +2797,39 @@ Hector.Builders = (function (window, document) {
         return out;
     };
 
-    Builders.View = function (element, contextName) {
+    function AttributeCommon(templateName, element, contextName) {
+        var out = renderTemplate(templateName, {
+            key: element.key,
+            value: parseTreeNode(element.value),
+            contextName: contextName
+        });
+
+        return out;
+    }
+
+    Builders.AttributeStatement = function (element, contextName) { 
+        return AttributeCommon("AttributeStatement", element, contextName);
+    };
+
+    Builders.AttributeDeclaration = function (element, contextName) { 
+        return AttributeCommon("AttributeDeclaration", element, contextName);
+    };
+
+    Builders.ViewStatement = function (element, contextName) {
         // @TODO fix this mess. Only part of this can use a template right now
         // cause it changes the AST too much
         var out = "";
         var inner = "";
         var constructorName = element.constructorName;
-        variableCounter.exclude(constructorName);
-        var varName = createUniqueIdentifier();
+        var varName = IdentifierBuilder.create();
 
-        out += "'" + constructorName + "';\n";
+        out += "\"" + constructorName + "\";\n";
 
         if (element.children.length) {
-            inner += walkTree(element.children, varName);
+            inner += walkTree(element.children, varName).join("");
         }
 
-        var attributes = element.attributes;
-        var attribute;
-
-        for (var i = 0, l = attributes.length; i < l; i++) {
-            attribute = attributes[i];
-
-            var value = attribute.value;
-            if (value && value.type) {
-                value = parseTreeNode(value);
-            }
-
-            value = value.replace(/"/gm, "'");
-            inner += varName + "." + attribute.key + " = " + value + ";\n";
-        }
+        inner += walkTree(element.attributes, varName).join("\n");
 
         var isConditional = false;
         if (constructorName.type === "Variable") {
@@ -3102,7 +2837,7 @@ Hector.Builders = (function (window, document) {
             constructorName = constructorName.value;
         }
 
-        out += renderTemplate("View", {
+        out += renderTemplate("ViewStatement", {
             contextName: contextName,
             appendChild: viewMethods.appendChild,
             varName: varName,
@@ -3115,18 +2850,29 @@ Hector.Builders = (function (window, document) {
     };
 
     Builders.ViewDeclaration = function (element, contextName) {
-        variableCounter.reset();
+        IdentifierBuilder.save();
+        var constructorName = element.constructorName;
+
+        var attributes = walkTree(element.attributes, contextName);
 
         var template = "";
-        template += "\"" + element.constructorName + "\";\n";
-        template += expandAttributes(element.attributes, contextName);
-        template += walkTree(element.children, contextName);
+        template += "\"" + constructorName + "\";\n";
+        template += walkTree(element.children, contextName).join("");
         
-        template = template.replace(/\n/g, "\\n").replace(/\"/g, "\\\"");
+        template = "\"" + template.replace(/\n/g, "\\\\n").replace(/\"/g, "\\\"") + "\"\n";
 
-        var out = "";
-        out += element.constructorName + ".template = \"" + template + "\";\n";
+        attributes.push(Builders.AttributeDeclaration({
+            key: "template",
+            value: template,
+            contextName: constructorName
+        }));
 
+        var out = renderTemplate("ViewDeclaration", {
+            constructorName: constructorName,
+            attributes: attributes
+        });
+
+        IdentifierBuilder.restore();
         return out;
     };
 
@@ -3134,7 +2880,9 @@ Hector.Builders = (function (window, document) {
     
 })(window, document);
 
-Hector.Builders.templates["Echo"] = "Hector.echo.call($contextName, $value)";
-Hector.Builders.templates["Variable"] = "<% if (isConditional) { %>\n(typeof $value !== 'undefined')\n    ? $evaluation\n    : undefined;\n<% } else { %>\n$evaluation;\n<% } %>";
-Hector.Builders.templates["View"] = "<% if (isConditional) { %>\nif (typeof $constructorName !== 'undefined') {\n    var $varName = new $constructorName();\n    $inner\n    $contextName.$appendChild($varName);\n}\n<% } else { %>\nvar $varName = (typeof $constructorName !== 'undefined')\n    ? new $constructorName\n    : new HectorOptions.baseConstructor('$constructorName');\n$inner\n$contextName.$appendChild($varName);\n<% } %>";
-Hector.Builders.templates["ViewDeclaration"] = "";
+Hector.Builders.templates["Echo"] = 'Hector.echo.call($contextName, $value)';
+Hector.Builders.templates["Variable"] = '<% if (isConditional) { %>\n(typeof $value !== "undefined")\n    ? $evaluation\n    : undefined;\n<% } else { %>\n$evaluation;\n<% } %>';
+Hector.Builders.templates["AttributeStatement"] = '$contextName.$key = $value;';
+Hector.Builders.templates["AttributeDeclaration"] = '$key: $value';
+Hector.Builders.templates["ViewStatement"] = '<% if (isConditional) { %>\nif (typeof $constructorName !== "undefined") {\n    var $varName = new $constructorName();\n    $inner\n    $contextName.$appendChild($varName);\n}\n<% } else { %>\nvar $varName = (typeof $constructorName !== "undefined")\n    ? new $constructorName\n    : new HectorOptions.baseConstructor("$constructorName");\n$inner\n$contextName.$appendChild($varName);\n<% } %>';
+Hector.Builders.templates["ViewDeclaration"] = '<%=Hector.options.namespace%>.$constructorName = Backbone.View.extend({\n    <% print(attributes.join(Hector.comma)); %>\n});';

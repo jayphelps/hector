@@ -1,8 +1,8 @@
 $(function () {
 
-    var ExampleView = Backbone.View.extend({
+    Hector.eval($("#templates").text());
 
-        template: Hector.compile($("#templates").text()),
+    ExampleView = ExampleView.extend({
 
         initialize: function() {
             this.model.set({ name: "Example Name", iconClassName:"hello", label:"click me" });
@@ -12,7 +12,6 @@ $(function () {
             var stringBuilder = new Hector.StringBuilder();
 
             Hector.render(this.template, this.model.toJSON(), stringBuilder);
-
             var output = stringBuilder.renderBuffer();
 
             this.$el.html(output);

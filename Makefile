@@ -6,7 +6,7 @@
 # ==============================================================================
 
 PROJECT_NAME = Hector
-PARSER_NAME  = "$(PROJECT_NAME).Parser"
+PARSER_NAME  = $(PROJECT_NAME).Parser
 TARGET 	     = javascript
 
 # Directories ==================================================================
@@ -32,10 +32,12 @@ SRC_FILES       = $(ROOT_FILE) $(PARSER_FILE) $(BUILDER_FILE)
 OUTPUT_FILE     = ./hector.js
 OUTPUT_FILE_MIN = ./hector.min.js
 
-TEMPLATES = Echo     \
-            Variable \
-            View     \
-            ViewDeclaration
+TEMPLATES = Echo                 \
+            Variable             \
+            AttributeStatement   \
+            AttributeDeclaration \
+            ViewStatement        \
+            ViewDeclaration      \
 
 BUFFER = hector-buffer.js
 
@@ -48,7 +50,7 @@ INDENT   = sed 's/^/    /'
 
 # Flags ==================================================================
 
-PEGJS_FLAGS = --export-var $(PARSER_NAME) # --track-line-and-column
+PEGJS_FLAGS = --export-var $(PARSER_NAME)# --track-line-and-column
 
 # Targets ======================================================================
 
@@ -62,9 +64,9 @@ build:
 	    printf "\n\n" >> $(BUFFER);  \
 	done
 	@for templateName in $(TEMPLATES); do                                                  \
-	    printf "$(PROJECT_NAME).Builders.templates[\"$$templateName\"] = \"" >> $(BUFFER); \
-		perl -p -e 's/\n/\\n/g' $(TEMPLATE_DIR)/$$templateName | tr '"' "'"            >> $(BUFFER); \
-	    printf "\";\n"                                                       >> $(BUFFER); \
+	    printf "$(PROJECT_NAME).Builders.templates[\"$$templateName\"] = '"  >> $(BUFFER); \
+		perl -p -e 's/\n/\\n/g' $(TEMPLATE_DIR)/$$templateName | tr "'" "\"" >> $(BUFFER); \
+	    printf "';\n"                                                        >> $(BUFFER); \
 	done
 	@cat $(BUFFER) > $(OUTPUT_FILE)
 	@rm -f $(BUFFER)

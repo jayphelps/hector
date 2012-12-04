@@ -1,0 +1,3 @@
+<%=Hector.options.namespace%>.$constructorName = Backbone.View.extend({
+    <% print(attributes.join(Hector.comma)); %>
+});

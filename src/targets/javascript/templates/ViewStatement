@@ -1,0 +1,13 @@
+<% if (isConditional) { %>
+if (typeof $constructorName !== "undefined") {
+    var $varName = new $constructorName();
+    $inner
+    $contextName.$appendChild($varName);
+}
+<% } else { %>
+var $varName = (typeof $constructorName !== "undefined")
+    ? new $constructorName
+    : new HectorOptions.baseConstructor("$constructorName");
+$inner
+$contextName.$appendChild($varName);
+<% } %>

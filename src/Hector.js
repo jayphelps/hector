@@ -16,7 +16,8 @@ var Hector = (function (window, document) {
         },
         debug: true,
         buffer: true,
-        baseConstructor: ElementContainer
+        baseConstructor: ElementContainer,
+        namespace: "window"
     };
 
     // ======================
@@ -81,6 +82,8 @@ var Hector = (function (window, document) {
     // =========================
 
     Hector.parseTreeNode = function (node, contextName) {
+        if (!node || !node.type) return node;
+
         var builder = Hector.Builders[node.type];
         if (!builder) throw Error("No builder for type: " + node.type);
 
@@ -90,10 +93,10 @@ var Hector = (function (window, document) {
     };
 
     Hector.walkTree = function (tree, contextName) {
-        var out = "";
+        var out = [];
 
         for (var i = 0, l = tree.length; i < l; i++) {
-            out += Hector.parseTreeNode(tree[i], contextName);
+            out.push(Hector.parseTreeNode(tree[i], contextName));
         }
         
         return out;
@@ -307,11 +310,18 @@ var Hector = (function (window, document) {
 
         log(tree, "ParseTree");
 
-        var output = Hector.walkTree(tree.nodes, "this");
+        var output = Hector.walkTree(tree.nodes, "this").join("");
 
         log(output, "TemplateOutput");
     
         return output;
+    };
+
+    Hector.eval = function (source) {
+        var output = Hector.compile(source);
+        var script = document.createElement("script");
+        script.appendChild(document.createTextNode(output));
+        (document.body || document.head || document.documentElement).appendChild(script);
     };
 
     return Hector;

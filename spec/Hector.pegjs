@@ -1,3 +1,8 @@
+/**
+ * This first part was boosted from the JavaScript grammar by David Majda and
+ * collabs over at https://github.com/dmajda/pegjs
+ */
+
 start
     = __ template:Template __ {
         return template;
@@ -82,24 +87,104 @@ DecimalDigits
 DecimalDigit
   = [0-9]
 
+Identifier "identifier"
+    = start:IdentifierStart parts:IdentifierPart* {
+        var str = start + parts.join("");
+        Hector.symbols.add(str);
+        return str;
+    }
+
+IdentifierStart
+    = [a-zA-Z_]
+
+IdentifierPart
+    = IdentifierStart
+    / [0-9]
+
+DEF         = "def" !IdentifierPart
+SAFE_ACCESS = "?"   !IdentifierPart
+
 StringLiteral "string"
     = parts:('"' DoubleStringCharacters? '"' / "'" SingleStringCharacters? "'") {
-      return "\""+parts[1]+"\"";
+        return {
+            type: "StringLiteral",
+            attributes: [],
+            value: "\"" + parts[1] + "\""
+        };
     }
 
-
-
-
-
-
-ViewDeclaration
-    = "def" __ inst:ViewStatement {
-        inst.type = "ViewDeclaration";
-        return inst;
+Variable "variable"
+    = "$" start:IdentifierStart parts:IdentifierPart* useSafeAccess:SAFE_ACCESS? __ attributes:Attributes? {
+        var str = start + parts.join("");
+        Hector.symbols.add(str);
+        return {
+            type: "Variable",
+            value: str,
+            isConditional: !!useSafeAccess,
+            attributes: attributes || []
+        };
     }
+
+VariableStatement "variable"
+    = variable:Variable __ ";" {
+        variable.type = "VariableStatement";
+        return variable;
+    }
+
+Property "property"
+    = head:Identifier tail:("." Identifier)* {
+        var result = [head];
+        for (var i = 0, l = tail.length; i < l; i++) {
+            result.push(tail[i][1]);
+        }
+
+        return result.join(".");
+    }
+
+Attribute
+    = id:Property __ "=" __ value:(StringLiteral / Variable / Identifier) {
+        return {
+            type: "AttributeStatement",
+            key: id,
+            value: value
+        }
+    }
+
+Attributes
+    = head:Attribute tail:(__ Attribute)* {
+        var result = [head];
+        for (var i = 0, l = tail.length; i < l; i++) {
+            result.push(tail[i][1]);
+        }
+
+        return result;
+    }
+
+Argument
+    = id:Identifier __ ":" __ value:(StringLiteral / Variable / ViewStatementNoEOL) __ ";" {
+        return {
+            type: "Argument",
+            key: id,
+            value: value
+        };
+    }
+
+Arguments
+    = head:Argument tail:(__ Argument)* {
+        var result = [head];
+        for (var i = 0, l = tail.length; i < l; i++) {
+            result.push(tail[i][1]);
+        }
+
+        return result;
+    }
+
+Children
+    = SourceElements
+    / Arguments
 
 ViewStatement
-    = id:(Variable / Identifier) __ attributes:Attributes? __ ";" {
+    = id:Identifier __ attributes:Attributes? __ ";" {
         return {
             type: "ViewStatement",
             constructorName: id,
@@ -130,96 +215,22 @@ ViewStatementNoEOL
         };
     }
 
-Children
-    = SourceElements
-    / Arguments
-
-Arguments
-    = head:Argument tail:(__ Argument)* {
-        var result = [head];
-        for (var i = 0, l = tail.length; i < l; i++) {
-            result.push(tail[i][1]);
+ViewDeclaration
+    = DEF __ declaration:ViewStatement {
+        declaration.type = "ViewDeclaration";
+        var attributes = declaration.attributes;
+        for (var i = 0, l = attributes.length; i < l; i++) {
+            attributes[i].type = "AttributeDeclaration";
         }
 
-        return result;
+        return declaration;
     }
-
-Argument
-    = id:Identifier __ ":" __ value:(StringLiteral / Variable / ViewStatementNoEOL) __ ";" {
-        return {
-            type: "Argument",
-            key: id,
-            value: value
-        };
-    }
-
-Attributes
-    = head:Attribute tail:(__ Attribute)* {
-        var result = [head];
-        for (var i = 0, l = tail.length; i < l; i++) {
-            result.push(tail[i][1]);
-        }
-
-        return result;
-    }
-
-Attribute
-    = id:Property __ "=" __ value:(StringLiteral / Variable / Identifier) {
-        return {
-            type: "Attribute",
-            key: id,
-            value: value
-        }
-    }
-
-Property "property"
-    = head:Identifier tail:("." Identifier)* {
-        var result = [head];
-        for (var i = 0, l = tail.length; i < l; i++) {
-            result.push(tail[i][1]);
-        }
-
-        return result.join(".");
-    }
-
-VariableStatement "variable"
-    = variable:Variable __ ";" {
-        variable.type = "VariableStatement";
-        return variable;
-    }
-
-Variable "variable"
-    = "$" start:IdentifierStart parts:IdentifierPart* isConditional:"?"? __ attributes:Attributes? {
-        return {
-            type: "Variable",
-            value: start + parts.join(""),
-            isConditional: !!isConditional,
-            attributes: attributes || []
-        };
-    }
-
-Identifier "identifier"
-    = start:IdentifierStart parts:IdentifierPart* {
-        return start + parts.join("");
-    }
-
-IdentifierStart
-    = [a-zA-Z_]
-
-IdentifierPart
-    = IdentifierStart
-    / [0-9]
 
 SourceElement
-    = VariableStatement
+    = ViewDeclaration
     / ViewStatement
-    / value:StringLiteral {
-        return {
-            type: "String",
-            attributes: [],
-            value: value
-        };
-    }
+    / VariableStatement
+    / StringLiteral
 
 SourceElements
     = head:SourceElement tail:(__ SourceElement)* {

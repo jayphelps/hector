@@ -1,5 +1,32 @@
 Hector.Builders = (function (window, document) {
 
+    var nativeForEach = Array.prototype.forEach;
+
+    Hector.forEach = function (obj, iterator, context) {
+        if (obj == null) return;
+        if (nativeForEach && obj.forEach === nativeForEach) {
+            obj.forEach(iterator, context);
+        } else if (obj.length === +obj.length) {
+            for (var i = 0, l = obj.length; i < l; i++) {
+                if (iterator.call(context, obj[i], i, obj) === breaker) return;
+            }
+        } else {
+            for (var key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    if (iterator.call(context, obj[key], key, obj) === breaker) return;
+                }
+            }
+        }
+    };
+
+    (Hector.symbols = []).add = function (symbol) {
+        if (this.indexOf(symbol) === -1) {
+            this.push(symbol);
+        }
+    };
+
+    Hector.comma = ",\n   ";
+
     var Builders = {};
 
     // Namespace for all the target language string templates
@@ -14,18 +41,6 @@ Hector.Builders = (function (window, document) {
     // =========================
     // == AST Parsing Helpers ==
     // =========================
-
-    var variableCounter = {
-        count: -1,
-        excludes: [],
-        reset: function () {
-            variableCounter.count = -1;
-            variableCounter.excludes.length = 0;
-        },
-        exclude: function () {
-            this.excludes.push.apply(this.excludes, arguments);
-        }
-    };
 
     var variableNames = "abcdefghijklmnopqrstuvwxyz".split("");
     var variableNameCount = variableNames.length;
@@ -46,40 +61,32 @@ Hector.Builders = (function (window, document) {
 
         i = Math.floor(i);
 
-        variableName += variableNames[i] + "_";
+        variableName += variableNames[i];
 
         return variableName;
     }
 
-    function createUniqueIdentifier() {
-        variableCounter.count++;
-        var varName = createUniqueName(variableCounter.count);
+    var IdentifierBuilder = {
+        count: -1,
+        stack: [],
+        save: function () {
+            this.stack.push(IdentifierBuilder.count);
+            IdentifierBuilder.count = -1;
+        },
+        restore: function () {
+            IdentifierBuilder.count = this.stack.pop();
+        },
+        create: function () {
+            IdentifierBuilder.count++;
+            var varName = createUniqueName(IdentifierBuilder.count);
 
-        if (variableCounter.excludes.indexOf(varName) !== -1) {
-            return createUniqueIdentifier();
-        } else {
-            return varName;
-        }
-    }
-
-    function expandAttributes(attributes, contextName) {
-        var out = "";
-        var attribute;
-
-        for (var i = 0, l = attributes.length; i < l; i++) {
-            attribute = attributes[i];
-            if (attribute.type !== "Attribute") throw Error("Invalid attribute type: " + attribute.type);
-
-            var value = attribute.value;
-            if (value && value.type) {
-                value = parseTreeNode(value);
+            if (Hector.symbols.indexOf(varName) !== -1) {
+                return this.create();
+            } else {
+                return varName;
             }
-
-            out += contextName + "." + attribute.key + " = " + value + ";\n";
         }
-
-        return out;
-    }
+    };
 
     var templateCache = {};
     
@@ -97,15 +104,22 @@ Hector.Builders = (function (window, document) {
             }
         }
 
+        // Workaround for lack of lookbehinds. Need to escape existing quotes
+        str = str.replace(/(\\)?\\\"/g, function ($0, $1) {
+            return $1 ? $0 : "\\\\\\\"";
+        }).replace(/(\\)?\"/g, function ($0, $1) {
+            return $1 ? $0 : "\\\"";
+        });
+
         str = "var p=[],print=function(){p.push.apply(p,arguments);};"
             + "p.push(\""
             + str.replace(/[\r\t\n]/g, "\\n")
-                 .split("<%").join("\t")
-                 .replace(/((^|%>)[^\t]*)'/g, "$1\r")
+            .split("<%").join("\t")
+            .replace(/((^|%>)[^\t]*)'/g, "$1\r")
                  .replace(/\t=(.*?)%>/g, "\",$1,\"")
                  .split("\t").join("\");")
                  .split("%>").join("p.push(\"")
-                 .split("\r").join("'")
+                 .split("\r").join("\\'")
                  .replace(/\$/gm, "")
             + "\");return p.join(\"\");";
 
@@ -132,12 +146,8 @@ Hector.Builders = (function (window, document) {
         return element.value;
     };
 
-    Builders.String = function (element, contextName) {
-        throw Error("String is not implemented yet");
-    };
-
-    Builders.Attribute = function (element, contextName) {
-        throw Error("Attribute is not implemented yet");
+    Builders.StringLiteral = function (element, contextName) {
+        return element.value;
     };
 
     Builders.Variable = function (element, contextName) {
@@ -146,7 +156,11 @@ Hector.Builders = (function (window, document) {
     };
 
     Builders.VariableStatement = function (element, contextName) {
-        element.evaluation = renderTemplate("Echo", { contextName: contextName, value: element.value });
+        element.evaluation = renderTemplate("Echo", {
+            contextName: contextName,
+            value: element.value
+        });
+
         return renderTemplate("Variable", element);
     };
 
@@ -156,9 +170,9 @@ Hector.Builders = (function (window, document) {
 
         switch (value.type) {
             case "Variable":
-                value = Builders.Variable(value).toString();
+                value = Builders.Variable(value);
                 break;
-            case "View":
+            case "ViewStatement":
                 value = value.value;
                 break;
             default:
@@ -170,35 +184,39 @@ Hector.Builders = (function (window, document) {
         return out;
     };
 
-    Builders.View = function (element, contextName) {
+    function AttributeCommon(templateName, element, contextName) {
+        var out = renderTemplate(templateName, {
+            key: element.key,
+            value: parseTreeNode(element.value),
+            contextName: contextName
+        });
+
+        return out;
+    }
+
+    Builders.AttributeStatement = function (element, contextName) { 
+        return AttributeCommon("AttributeStatement", element, contextName);
+    };
+
+    Builders.AttributeDeclaration = function (element, contextName) { 
+        return AttributeCommon("AttributeDeclaration", element, contextName);
+    };
+
+    Builders.ViewStatement = function (element, contextName) {
         // @TODO fix this mess. Only part of this can use a template right now
         // cause it changes the AST too much
         var out = "";
         var inner = "";
         var constructorName = element.constructorName;
-        variableCounter.exclude(constructorName);
-        var varName = createUniqueIdentifier();
+        var varName = IdentifierBuilder.create();
 
-        out += "'" + constructorName + "';\n";
+        out += "\"" + constructorName + "\";\n";
 
         if (element.children.length) {
-            inner += walkTree(element.children, varName);
+            inner += walkTree(element.children, varName).join("");
         }
 
-        var attributes = element.attributes;
-        var attribute;
-
-        for (var i = 0, l = attributes.length; i < l; i++) {
-            attribute = attributes[i];
-
-            var value = attribute.value;
-            if (value && value.type) {
-                value = parseTreeNode(value);
-            }
-
-            value = value.replace(/"/gm, "'");
-            inner += varName + "." + attribute.key + " = " + value + ";\n";
-        }
+        inner += walkTree(element.attributes, varName).join("\n");
 
         var isConditional = false;
         if (constructorName.type === "Variable") {
@@ -206,7 +224,7 @@ Hector.Builders = (function (window, document) {
             constructorName = constructorName.value;
         }
 
-        out += renderTemplate("View", {
+        out += renderTemplate("ViewStatement", {
             contextName: contextName,
             appendChild: viewMethods.appendChild,
             varName: varName,
@@ -219,18 +237,29 @@ Hector.Builders = (function (window, document) {
     };
 
     Builders.ViewDeclaration = function (element, contextName) {
-        variableCounter.reset();
+        IdentifierBuilder.save();
+        var constructorName = element.constructorName;
+
+        var attributes = walkTree(element.attributes, contextName);
 
         var template = "";
-        template += "\"" + element.constructorName + "\";\n";
-        template += expandAttributes(element.attributes, contextName);
-        template += walkTree(element.children, contextName);
+        template += "\"" + constructorName + "\";\n";
+        template += walkTree(element.children, contextName).join("");
         
-        template = template.replace(/\n/g, "\\n").replace(/\"/g, "\\\"");
+        template = "\"" + template.replace(/\n/g, "\\\\n").replace(/\"/g, "\\\"") + "\"\n";
 
-        var out = "";
-        out += element.constructorName + ".template = \"" + template + "\";\n";
+        attributes.push(Builders.AttributeDeclaration({
+            key: "template",
+            value: template,
+            contextName: constructorName
+        }));
 
+        var out = renderTemplate("ViewDeclaration", {
+            constructorName: constructorName,
+            attributes: attributes
+        });
+
+        IdentifierBuilder.restore();
         return out;
     };
 

@@ -9,12 +9,25 @@
 </head>
 <body>
 
+<script>
+var App = {};
+</script>
+
 <script id="templates" type="text/x-hector-template">
 
-    span tagName="span" {
-        i className=$iconClassName?;
-        b { $label?; }
+def ExampleView tagName="span" className="example-view" {
+    a href="index.html" {
+        b className="label" {
+            $label?;
+        }
     }
+
+    ul {
+        li;
+        li;
+        li;
+    }
+}
 
 </script>
 
