@@ -1,8 +1,15 @@
 $(function () {
 
+    /**
+     * Helper method to add more members to an already existing View
+     */
+    Backbone.View.reopen = function (obj) {
+        _.extend(this.prototype, obj);
+    };
+    
     Hector.eval($("#templates").text());
 
-    ExampleView = ExampleView.extend({
+    ExampleView.reopen({
 
         initialize: function() {
             this.model.set({ name: "Example Name", iconClassName:"hello", label:"click me" });
