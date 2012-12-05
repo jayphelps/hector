@@ -1,5 +1,5 @@
 # ==============================================================================
-# Hector.js
+# Hector
 # Copyright (c) 2012 Jay Phelps
 # MIT licensed
 # https://github.com/jayphelps/hector

@@ -1,4 +1,4 @@
-Hector.js [![Build Status](https://travis-ci.org/jayphelps/hector.png)](https://travis-ci.org/jayphelps/hector)
+Hector [![Build Status](https://travis-ci.org/jayphelps/hector.png)](https://travis-ci.org/jayphelps/hector)
 ======
 In progress.
 
@@ -55,7 +55,7 @@ def AboutPageView backgroundColor="green" {
 }
 ```
 
-###### Output of a rendered HomePageView:
+###### Output of a rendered HomePageView instance (JavaScript target)
 ```html
 <div style="background-color: red">
     <header>
