@@ -90,6 +90,10 @@ Hector.Builders = (function (window, document) {
 
     var templateCache = {};
     
+    function addslashes(str) {
+        return (str + "").replace(/[\\"']/gm, "\\$&").replace(/\u0000/gm, "\\0");
+    }
+
     // Originally based off: Simple JavaScript Templating
     // John Resig - http://ejohn.org/ - MIT Licensed
     function render(str, data) {
@@ -104,24 +108,16 @@ Hector.Builders = (function (window, document) {
             }
         }
 
-        // Workaround for lack of lookbehinds. Need to escape existing quotes
-        str = str.replace(/(\\)?\\\"/g, function ($0, $1) {
-            return $1 ? $0 : "\\\\\\\"";
-        }).replace(/(\\)?\"/g, function ($0, $1) {
-            return $1 ? $0 : "\\\"";
-        });
-
         str = "var p=[],print=function(){p.push.apply(p,arguments);};"
-            + "p.push(\""
-            + str.replace(/[\r\t\n]/g, "\\n")
-            .split("<%").join("\t")
-            .replace(/((^|%>)[^\t]*)'/g, "$1\r")
-                 .replace(/\t=(.*?)%>/g, "\",$1,\"")
-                 .split("\t").join("\");")
-                 .split("%>").join("p.push(\"")
+            + "p.push('"
+            + addslashes(str).replace(/[\r\t\n]/g, "\\n")
+                 .split("<%").join("\t")
+                 .replace(/((^|%>)[^\t]*)'/g, "$1\r")
+                 .replace(/\t=(.*?)%>/g, "',$1,'")
+                 .split("\t").join("');")
+                 .split("%>").join("p.push('")
                  .split("\r").join("\\'")
-                 //.replace(/\$/gm, "")
-            + "\");return p.join(\"\");";
+                 + "');return p.join('');"
 
         keys.push(str);
 
@@ -245,7 +241,8 @@ Hector.Builders = (function (window, document) {
         template += "\"" + constructorName + "\";\n";
         template += walkTree(element.children, contextName).join("");
         
-        template = "\"" + template.replace(/\n/g, "\\\\n").replace(/\"/g, "\\\"") + "\"\n";
+        // Need to cleanup things so this isn't needed...
+        template = "\"" + template.replace(/\n/g, "\\n").replace(/\"/g, "\\\"") + "\"\n";
 
         attributes.push(Builders.AttributeDeclaration({
             key: "template",

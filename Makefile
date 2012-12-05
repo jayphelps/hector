@@ -7,7 +7,7 @@
 
 PROJECT_NAME = Hector
 PARSER_NAME  = $(PROJECT_NAME).Parser
-TARGET 	     = javascript/hector
+TARGET 	     = javascript/backbone
 
 # Directories ==================================================================
 
@@ -49,6 +49,7 @@ NODE     = node
 UGLIFYJS = uglifyjs
 INDENT   = sed 's/^/    /'
 READLINK = sh tools/scripts/readlink.sh
+CLEANTEMPLATE = sh tools/scripts/cleantemplate.sh
 
 # Flags ==================================================================
 
@@ -62,13 +63,13 @@ all: pegjs parser build
 # Build the compiler
 build:
 	@for srcFile in $(SRC_FILES); do \
-	    cat $$srcFile >> $(BUFFER);   \
+	    cat $$srcFile >> $(BUFFER);  \
 	    printf "\n\n" >> $(BUFFER);  \
 	done
 	@for templateName in $(TEMPLATES); do                                                  \
-	    printf "$(PROJECT_NAME).Builders.templates[\"$$templateName\"] = '"  >> $(BUFFER); \
-		$(READLINK) $(TEMPLATE_DIR)/$$templateName | xargs perl -p -e 's/\n/\\n/g' | tr "'" "\"" >> $(BUFFER); \
-	    printf "';\n"                                                        >> $(BUFFER); \
+	    printf "$(PROJECT_NAME).Builders.templates[\"$$templateName\"] = \"" >> $(BUFFER); \
+		$(READLINK) $(TEMPLATE_DIR)/$$templateName | xargs $(CLEANTEMPLATE)  >> $(BUFFER); \
+	    printf "\";\n"                                                       >> $(BUFFER); \
 	done
 	@cat $(BUFFER) > $(OUTPUT_FILE)
 	@rm -f $(BUFFER)
