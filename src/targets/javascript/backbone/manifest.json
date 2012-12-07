@@ -1,0 +1,11 @@
+{
+    "name": "Hector.Backbone.js",
+    "files": [
+        "../hector/runtime/utilities.js",
+        "../hector/runtime/Hector.echo.js",
+        "../hector/runtime/Hector.StringBuilder.js",
+        "../hector/runtime/Hector.TextNodeConstructor.js",
+        "../hector/runtime/Hector.ElementConstructor.js",
+        "runtime/Hector.Backbone.js"
+    ]
+}
