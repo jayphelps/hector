@@ -1,5 +1,7 @@
 (function (window, document) {
-
+    // Local reference for the global options
+    var options = Hector.options;
+    
     function TextNodeConstructor(value) {
         if (!options.buffer) return document.createTextNode(value);
 
@@ -23,5 +25,5 @@
 
     Hector.TextNodeConstructor = TextNodeConstructor;
     Hector.options.textNodeConstructor = TextNodeConstructor;
-    
+
 })(window, document);

@@ -2529,7 +2529,7 @@ Hector.Builders = (function (window, document) {
         element.value = "scope." + element.value;
         element.evaluation = renderTemplate("Echo", {
             contextName: contextName,
-            value: "scope." + element.value
+            value: element.value
         });
 
         return renderTemplate("Variable", element);
