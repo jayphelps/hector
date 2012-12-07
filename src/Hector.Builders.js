@@ -1,24 +1,5 @@
 Hector.Builders = (function (window, document) {
 
-    var nativeForEach = Array.prototype.forEach;
-
-    Hector.forEach = function (obj, iterator, context) {
-        if (obj == null) return;
-        if (nativeForEach && obj.forEach === nativeForEach) {
-            obj.forEach(iterator, context);
-        } else if (obj.length === +obj.length) {
-            for (var i = 0, l = obj.length; i < l; i++) {
-                if (iterator.call(context, obj[i], i, obj) === breaker) return;
-            }
-        } else {
-            for (var key in obj) {
-                if (obj.hasOwnProperty(key)) {
-                    if (iterator.call(context, obj[key], key, obj) === breaker) return;
-                }
-            }
-        }
-    };
-
     (Hector.symbols = []).add = function (symbol) {
         if (this.indexOf(symbol) === -1) {
             this.push(symbol);
@@ -147,14 +128,16 @@ Hector.Builders = (function (window, document) {
     };
 
     Builders.Variable = function (element, contextName) {
+        element.value = "scope." + element.value;
         element.evaluation = element.value;
         return renderTemplate("Variable", element);
     };
 
     Builders.VariableStatement = function (element, contextName) {
+        element.value = "scope." + element.value;
         element.evaluation = renderTemplate("Echo", {
             contextName: contextName,
-            value: element.value
+            value: "scope." + element.value
         });
 
         return renderTemplate("Variable", element);
@@ -238,11 +221,13 @@ Hector.Builders = (function (window, document) {
         var attributes = walkTree(element.attributes, contextName);
 
         var template = "";
+        template += "function (scope) {\n";
         template += "\"" + constructorName + "\";\n";
         template += walkTree(element.children, contextName).join("");
+        template += '}';
         
         // Need to cleanup things so this isn't needed...
-        template = "\"" + template.replace(/\n/g, "\\n").replace(/\"/g, "\\\"") + "\"\n";
+        //template = "\"" + template.replace(/\n/g, "\\n").replace(/\"/g, "\\\"") + "\"\n";
 
         attributes.push(Builders.AttributeDeclaration({
             key: "template",

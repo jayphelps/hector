@@ -5,17 +5,22 @@
     <script src="../lib/underscore.min.js"></script>
     <script src="../../../hector.js"></script>
     <script src="lib/backbone.min.js"></script>
+    <script src="../../../src/targets/javascript/hector/runtime/Hector.echo.js"></script>
+    <script src="../../../src/targets/javascript/hector/runtime/Hector.StringBuilder.js"></script>
+    <script src="../../../src/targets/javascript/hector/runtime/Hector.TextNodeConstructor.js"></script>
+    <script src="../../../src/targets/javascript/hector/runtime/Hector.ElementConstructor.js"></script>
+    <script src="../../../src/targets/javascript/backbone/runtime/Hector.Backbone.js"></script>
     <script src="js/app.js"></script>
 </head>
 <body>
 <script id="templates" type="text/x-hector-template">
 
 def ExampleView tagName="span" className="example-view" {
-    a href="index.html" {
+    /*a href="index.html" {
         b className="label" {
             $label?;
         }
-    }
+    }*/
 
     ul {
         li;

@@ -1,1 +1,1 @@
-$contextName.$el.attr("$key", $value);
+Hector.Backbone.setAttribute("$key", $value, $contextName);

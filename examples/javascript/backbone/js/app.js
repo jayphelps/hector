@@ -1,35 +1,23 @@
 $(function () {
     
-    
-    /**
-     * Helper method to add more members to an already existing View
-     */
-    Backbone.View.reopen = function (obj) {
-        _.extend(this.prototype, obj);
-    };
-    
     Hector.eval($("#templates").text());
 
-    ExampleView.reopen({
+    /*Hector.Backbone.reopen.call(ExampleView, {
 
         initialize: function() {
             this.model.set({ name: "Example Name", iconClassName:"hello", label:"click me" });
-        },
-
-        render: function() {
-            var stringBuilder = new Hector.StringBuilder();
-
-            Hector.render(this.template, this.model.toJSON(), stringBuilder);
-            var output = stringBuilder.renderBuffer();
-
-            this.$el.html(output);
-
-            return this;
         }
-    });
 
-    var view = new ExampleView({ model: new Backbone.Model });
+    });*/
+
+    var view = new ExampleView({ model: new Backbone.Model({label: "FUCK YPU"})});
+
     $("body").append(view.render().el);
 
+    var template = function (scope) {
+        alert(scope.fuck);
+    };
+
+    //template({ fuck: "you" });
 
 });
