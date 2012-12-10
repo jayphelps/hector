@@ -48,8 +48,8 @@ D8       = $(V8_DIR)/out/native/d8
 NODE     = node
 UGLIFYJS = uglifyjs
 INDENT   = sed 's/^/    /'
-READLINK = sh tools/scripts/readlink.sh
-CLEANTEMPLATE = sh tools/scripts/cleantemplate.sh
+READLINK = bash tools/scripts/readlink.sh
+CLEANTEMPLATE = bash tools/scripts/cleantemplate.sh
 
 # Flags ==================================================================
 
