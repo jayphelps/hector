@@ -4,7 +4,7 @@ In progress.
 
 
 ### Example
-```   
+```groovy
 // This is a valid comment
 /* So is this */
 
